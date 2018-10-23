@@ -9,6 +9,13 @@ to reset
 end
 
 to load
+  file-open "roads.txt"
+  while [not file-at-end?] [
+    let x file-read
+    let y file-read
+    ask patch x y [set pcolor red show pxcor]
+  ]
+  file-close
 end
 @#$#@#$#@
 GRAPHICS-WINDOW

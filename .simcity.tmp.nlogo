@@ -1,16 +1,25 @@
 breed [persons person]
 breed [cars car]
-breed [houses house]
 
 
-to setup
+to reset
   ca
   set-default-shape persons "person"
   set-default-shape cars "triangle"
 end
 
 to load
-  create-directed-link-roads 10
+  file-open "roads.txt"
+  while [not file-at-end?] [
+    let line file-read
+    show item 0 line
+    show item 1 line
+    show item 2 line
+    ;let x read-from-string item 0 line
+    ;let y read-from-string item 2 line
+    ;ask patch x y [set pcolor red show pxcor]
+  ]
+  file-close
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -39,6 +48,40 @@ GRAPHICS-WINDOW
 1
 ticks
 30.0
+
+BUTTON
+7
+10
+70
+43
+NIL
+reset
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+76
+10
+139
+43
+NIL
+load
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
