@@ -1,35 +1,67 @@
 breed [persons person]
 breed [cars car]
+cars-own [speed]
+globals [road-color intersection-color]
 
 
 to reset
   ca
+  reset-ticks
+  set road-color red
+  set intersection-color blue
+  set-default-shape cars "car"
   set-default-shape persons "person"
-  set-default-shape cars "triangle"
+  ask cars [init-cars]
 end
 
 to load
   file-open "roads.txt"
   while [not file-at-end?] [
-    let line file-read
-    show item 0 line
-    show item 1 line
-    show item 2 line
-    ;let x read-from-string item 0 line
-    ;let y read-from-string item 2 line
-    ;ask patch x y [set pcolor red show pxcor]
+    let xA file-read
+    let yA file-read
+    let xB file-read
+    let yB file-read
+    ask patches with [min list xA xB <= pxcor and pxcor <= max list xA xB and min list yA yB <= pycor and pycor <= max list yA yB] [set pcolor road-color]
+  ]
+  file-close
+  file-open "cars.txt"
+  while [not file-at-end?][
+    let x file-read
+    let y file-read
+    create-cars 1 [setxy x y set heading 90 init-cars]
   ]
   file-close
 end
+
+to update
+  ask cars [update-cars]
+  tick
+end
+
+to init-cars
+  set speed 1
+end
+
+to update-cars
+  let front-side patch-ahead 1
+
+  let left-side patch-left-and-ahead 90 1
+  let right-side patch-right-and-ahead 90 1
+  let back-side patch-ahead -1
+  let road-patches (patch-set front-side left-side right-side back-side)
+  set road-patches road-patches with [pcolor = road-color]
+  set heading towards one-of road-patches
+  fd speed
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-251
+265
 10
-1442
-620
+1441
+608
 -1
 -1
-18.21212121212121
+9.062
 1
 10
 1
@@ -39,12 +71,12 @@ GRAPHICS-WINDOW
 1
 1
 1
+-64
+64
 -32
 32
--16
-16
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -74,6 +106,23 @@ BUTTON
 NIL
 load
 NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+11
+72
+82
+105
+NIL
+update
+T
 1
 T
 OBSERVER
