@@ -1,17 +1,30 @@
-breed [persons person]
+globals [road-color intersection-color worker-request-color]
+
+breed [factories factory]
+factories-own [nb-workers-needed]
+
+breed [houses house]
+houses-own [nb-residents]
+
+breed [worker-requests worker-request]
+worker-requests-own [speed nb-workers-needed]
+
 breed [cars car]
-cars-own [speed]
-globals [road-color intersection-color]
+cars-own [speed nb-passengers]
+
 
 
 to reset
   ca
   reset-ticks
   set road-color red
-  set intersection-color blue
+  set intersection-color green
+  set worker-request-color blue
+  set-default-shape factories "fish"
+  set-default-shape houses "house"
   set-default-shape cars "car"
-  set-default-shape persons "person"
-  ask cars [init-cars]
+  set-default-shape worker-requests "circle"
+  load
 end
 
 to load
@@ -24,46 +37,115 @@ to load
     ask patches with [min list xA xB <= pxcor and pxcor <= max list xA xB and min list yA yB <= pycor and pycor <= max list yA yB] [set pcolor road-color]
   ]
   file-close
-  file-open "cars.txt"
-  while [not file-at-end?][
+  file-open "factories.txt"
+  while [not file-at-end?] [
     let x file-read
     let y file-read
-    create-cars 1 [setxy x y set heading 90 init-cars]
+    let nb-workers-needed-in file-read
+    create-factories 1 [init-factories x y nb-workers-needed-in]
+  ]
+  file-close
+  file-open "houses.txt"
+  while [not file-at-end?] [
+    let x file-read
+    let y file-read
+    let nb-residents-in file-read
+    create-houses 1 [init-houses x y nb-residents-in]
   ]
   file-close
 end
 
 to update
-  ask cars [update-cars]
+  ask factories [update-factories]
+  ask houses [update-houses]
+  ask worker-requests [update-wandering-agent set label nb-workers-needed]
+  ask cars [update-wandering-agent set label nb-passengers]
   tick
 end
 
-to init-cars
-  set speed 1
+to init-factories [x y nb-workers-needed-in]
+  setxy x y
+  set size 2
+  ask patch x y [set pcolor intersection-color]
+  set nb-workers-needed nb-workers-needed-in
 end
 
-to update-cars
-  let front-side patch-ahead 1
+to init-houses [x y nb-residents-in]
+  setxy x y
+  set size 2
+  ask patch x y [set pcolor intersection-color]
+  set nb-residents nb-residents-in
+end
 
-  let left-side patch-left-and-ahead 90 1
-  let right-side patch-right-and-ahead 90 1
-  let back-side patch-ahead -1
-  let road-patches (patch-set front-side left-side right-side back-side)
-  set road-patches road-patches with [pcolor = road-color]
-  set heading towards one-of road-patches
+to init-worker-requests [nb-workers-needed-in]
+  set nb-workers-needed nb-workers-needed-in
+  set speed 1
+  set heading 0
+  set color worker-request-color
+  set size 1
+  set label nb-workers-needed-in
+end
+
+to init-cars [x y nb-passengers-in]
+  setxy x y
+  set nb-passengers nb-passengers-in
+  set speed 1
+  set heading 0
+  set size 1
+  set label nb-passengers-in
+end
+
+to update-factories
+  if nb-workers-needed > 0 [
+    hatch-worker-requests 1 [init-worker-requests nb-workers-needed]
+    set nb-workers-needed nb-workers-needed - nb-workers-needed
+  ]
+
+end
+
+to update-houses
+  let messengers worker-requests in-radius 1
+  let mes []
+  ask messengers [set mes lput self mes]
+  foreach mes [ messenger ->
+    let needed [nb-workers-needed] of messenger
+    ifelse needed <= nb-residents [
+      set nb-residents nb-residents - needed
+      hatch-cars 1 [init-cars xcor ycor needed]
+      ask messenger [die]
+    ][
+      let nb-workers-left [nb-workers-needed - nb-residents
+      ask messenger [set nb-workers-needed nb-workers-left]
+      set nb-residents 0
+    ]
+  ]
+
+  set label nb-residents
+end
+
+to update-wandering-agent
+  let front-side patch-ahead 1
+  if [pcolor] of patch-here = intersection-color or [pcolor] of front-side != road-color [
+    let left-side patch-left-and-ahead 90 1
+    let right-side patch-right-and-ahead 90 1
+    let back-side patch-ahead -1
+    let road-patches (patch-set front-side left-side right-side back-side)
+    set road-patches road-patches with [pcolor = road-color]
+    set heading towards one-of road-patches
+  ]
   fd speed
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 265
 10
-1441
-608
+1379
+531
 -1
 -1
-9.062
+16.52
 1
-10
+20
 1
 1
 1
@@ -71,10 +153,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--64
-64
--32
-32
+-33
+33
+-15
+15
 1
 1
 1
