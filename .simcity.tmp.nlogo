@@ -1,16 +1,16 @@
-globals [road-color intersection-color worker-request-color]
+globals [road-color intersection-color offer-color offers-ttl cars-ttl]
 
 breed [factories factory]
-factories-own [nb-workers-needed]
+factories-own [nb-jobs nb-workers nb-offers-sent]
 
 breed [houses house]
-houses-own [nb-residents]
+houses-own [nb-residents nb-people]
 
-breed [worker-requests worker-request]
-worker-requests-own [speed nb-workers-needed]
+breed [offers offer]
+offers-own [factory-owner speed nb-labor time-to-live]
 
 breed [cars car]
-cars-own [speed nb-passengers]
+cars-own [house-owner speed nb-passengers time-to-drive]
 
 
 
@@ -19,11 +19,13 @@ to reset
   reset-ticks
   set road-color red
   set intersection-color green
-  set worker-request-color blue
+  set offer-color blue
+  set offers-ttl 100
+  set cars-ttl 100
   set-default-shape factories "fish"
   set-default-shape houses "house"
   set-default-shape cars "car"
-  set-default-shape worker-requests "circle"
+  set-default-shape offers "circle"
   load
 end
 
@@ -41,8 +43,8 @@ to load
   while [not file-at-end?] [
     let x file-read
     let y file-read
-    let nb-workers-needed-in file-read
-    create-factories 1 [init-factories x y nb-workers-needed-in]
+    let nb-jobs-in file-read
+    create-factories 1 [init-factories x y nb-jobs-in]
   ]
   file-close
   file-open "houses.txt"
@@ -55,72 +57,121 @@ to load
   file-close
 end
 
-to update
-  ask factories [update-factories]
-  ask houses [update-houses]
-  ask worker-requests [update-wandering-agent set label nb-workers-needed]
-  ask cars [update-wandering-agent set label nb-passengers]
-  tick
-end
-
-to init-factories [x y nb-workers-needed-in]
+to init-factories [x y nb-jobs-in]
   setxy x y
+  set nb-jobs nb-jobs-in
+  set nb-workers 0
+  set nb-offers-sent 0
   set size 2
   ask patch x y [set pcolor intersection-color]
-  set nb-workers-needed nb-workers-needed-in
+  set label (word nb-workers "/" nb-jobs)
 end
 
 to init-houses [x y nb-residents-in]
   setxy x y
+  set nb-residents nb-residents-in
+  set nb-people nb-residents-in
   set size 2
   ask patch x y [set pcolor intersection-color]
-  set nb-residents nb-residents-in
+  set label (word nb-people "/" nb-residents)
 end
 
-to init-worker-requests [nb-workers-needed-in]
-  set nb-workers-needed nb-workers-needed-in
+to init-offers [x y factory-owner-in nb-labor-in time-to-live-in]
+  setxy x y
+  set factory-owner factory-owner-in
+  set nb-labor nb-labor-in
+  set time-to-live time-to-live-in
   set speed 1
   set heading 0
-  set color worker-request-color
+  set color offer-color
   set size 1
-  set label nb-workers-needed-in
 end
 
-to init-cars [x y nb-passengers-in]
+to init-cars [x y house-owner-in nb-passengers-in time-to-drive-in]
   setxy x y
+  set house-owner house-owner-in
   set nb-passengers nb-passengers-in
+  set time-to-drive time-to-drive-in
   set speed 1
   set heading 0
   set size 1
   set label nb-passengers-in
 end
 
+to update
+  ask factories [update-factories]
+  ask houses [update-houses]
+  ask offers [update-offers]
+  ask cars [update-cars]
+  tick
+end
+
 to update-factories
-  if nb-workers-needed > 0 [
-    hatch-worker-requests 1 [init-worker-requests nb-workers-needed]
-    set nb-workers-needed nb-workers-needed - nb-workers-needed
+
+  if nb-offers-sent + nb-workers < nb-jobs [
+    let needed nb-jobs - (nb-offers-sent + nb-workers)
+    let owner who
+    hatch-offers 1 [init-offers xcor ycor owner needed offers-ttl]
+    set nb-offers-sent nb-offers-sent + needed
   ]
 
+  let cars-around cars in-radius 1
+  let cars-around-list []
+  ask cars-around [set cars-around-list lput self cars-around-list]
+  foreach cars-around-list [car-here ->
+    let nb-applicants [nb-passengers] of car-here
+    let nb-jobs-left nb-jobs - nb-workers
+    ifelse nb-applicants <= nb-jobs-left [
+      set nb-workers nb-workers + nb-applicants
+      ask car-here [die]
+    ][
+      ask car-here [set nb-passengers nb-passengers - nb-jobs-left]
+      set nb-workers nb-jobs
+    ]
+  ]
+  set label (word nb-workers "/" nb-jobs)
 end
 
 to update-houses
-  let messengers worker-requests in-radius 1
-  let mes []
-  ask messengers [set mes lput self mes]
-  foreach mes [ messenger ->
-    let needed [nb-workers-needed] of messenger
-    ifelse needed <= nb-residents [
-      set nb-residents nb-residents - needed
-      hatch-cars 1 [init-cars xcor ycor needed]
-      ask messenger [die]
-    ][
-      let nb-workers-left [nb-workers-needed - nb-residents
-      ask messenger [set nb-workers-needed nb-workers-left]
-      set nb-residents 0
+  if nb-people > 0 [
+    let offers-around offers in-radius 1
+    let offers-around-list []
+    ask offers-around [set offers-around-list lput self offers-around-list]
+    let owner who
+    foreach offers-around-list [offer-here ->
+      let needed [nb-labor] of offer-here
+      ifelse needed <= nb-people [
+        set nb-people nb-people - needed
+        hatch-cars 1 [init-cars xcor ycor owner needed cars-ttl]
+        ask offer-here [die]
+      ][
+        let nb-passengers-new nb-people
+        let nb-offers-left [nb-labor] of offer-here - nb-passengers-new
+        ask offer-here [set nb-labor nb-offers-left]
+        hatch-cars 1 [init-cars xcor ycor owner nb-passengers-new cars-ttl]
+        set nb-people 0
+      ]
     ]
   ]
+  set label (word nb-people "/" nb-residents)
+end
 
-  set label nb-residents
+to update-offers
+  ;ifelse time-to-live > 0 [
+    update-wandering-agent
+  ;  set time-to-live time-to-live - 1
+  ;][
+  ;  let nb-offers-sent-old [nb-offers-sent] of factory factory-owner
+  ;  let nb-offers-sent-new nb-offers-sent-old - nb-labor
+  ;  ask factory factory-owner [set nb-offers-sent nb-offers-sent-new]
+  ;  die
+  ;]
+  set label nb-labor
+end
+
+to update-cars
+  update-wandering-agent
+  set label nb-passengers
 end
 
 to update-wandering-agent
