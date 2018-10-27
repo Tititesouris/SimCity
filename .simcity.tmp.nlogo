@@ -21,7 +21,7 @@ to reset
   set intersection-color green
   set offer-color blue
   set offers-ttl 100
-  set cars-ttl 100
+  set cars-ttl 20
   set-default-shape factories "fish"
   set-default-shape houses "house"
   set-default-shape cars "car"
@@ -107,26 +107,27 @@ to update
 end
 
 to update-factories
+  if nb-workers < nb-jobs [
+    if nb-offers-sent + nb-workers < nb-jobs [
+      let needed nb-jobs - (nb-offers-sent + nb-workers)
+      let owner who
+      hatch-offers 1 [init-offers xcor ycor owner needed offers-ttl]
+      set nb-offers-sent nb-offers-sent + needed
+    ]
 
-  if nb-offers-sent + nb-workers < nb-jobs [
-    let needed nb-jobs - (nb-offers-sent + nb-workers)
-    let owner who
-    hatch-offers 1 [init-offers xcor ycor owner needed offers-ttl]
-    set nb-offers-sent nb-offers-sent + needed
-  ]
-
-  let cars-around cars in-radius 1
-  let cars-around-list []
-  ask cars-around [set cars-around-list lput self cars-around-list]
-  foreach cars-around-list [car-here ->
-    let nb-applicants [nb-passengers] of car-here
-    let nb-jobs-left nb-jobs - nb-workers
-    ifelse nb-applicants <= nb-jobs-left [
-      set nb-workers nb-workers + nb-applicants
-      ask car-here [die]
-    ][
-      ask car-here [set nb-passengers nb-passengers - nb-jobs-left]
-      set nb-workers nb-jobs
+    let cars-around cars in-radius 1
+    let cars-around-list []
+    ask cars-around [set cars-around-list lput self cars-around-list]
+    foreach cars-around-list [car-here ->
+      let nb-applicants [nb-passengers] of car-here
+      let nb-jobs-left nb-jobs - nb-workers
+      ifelse nb-applicants <= nb-jobs-left [
+        set nb-workers nb-workers + nb-applicants
+        ask car-here [die]
+      ][
+        ask car-here [set nb-passengers nb-passengers - nb-jobs-left]
+        set nb-workers nb-jobs
+      ]
     ]
   ]
   set label (word nb-workers "/" nb-jobs)
@@ -157,20 +158,28 @@ to update-houses
 end
 
 to update-offers
-  ;ifelse time-to-live > 0 [
+  ifelse time-to-live > 0 [
     update-wandering-agent
-  ;  set time-to-live time-to-live - 1
-  ;][
-  ;  let nb-offers-sent-old [nb-offers-sent] of factory factory-owner
-  ;  let nb-offers-sent-new nb-offers-sent-old - nb-labor
-  ;  ask factory factory-owner [set nb-offers-sent nb-offers-sent-new]
-  ;  die
-  ;]
+    set time-to-live time-to-live - 1
+  ][
+    let nb-offers-sent-old [nb-offers-sent] of factory factory-owner
+    let nb-offers-sent-new nb-offers-sent-old - nb-labor
+    ask factory factory-owner [set nb-offers-sent nb-offers-sent-new]
+    die
+  ]
   set label nb-labor
 end
 
 to update-cars
-  update-wandering-agent
+  ifelse time-to-drive > 0 [
+    update-wandering-agent
+    set time-to-drive time-to-drive - 1
+  ][
+    let nb-people-old [nb-people] of house house-owner
+    let nb-people-new nb-people-old + nb-passengers
+    ask house house-owner [set nb--sent nb-offers-sent-new]
+    die
+  ]
   set label nb-passengers
 end
 

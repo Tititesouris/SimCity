@@ -21,7 +21,7 @@ to reset
   set intersection-color green
   set offer-color blue
   set offers-ttl 100
-  set cars-ttl 100
+  set cars-ttl 20
   set-default-shape factories "fish"
   set-default-shape houses "house"
   set-default-shape cars "car"
@@ -158,20 +158,28 @@ to update-houses
 end
 
 to update-offers
-  ;ifelse time-to-live > 0 [
+  ifelse time-to-live > 0 [
     update-wandering-agent
-  ;  set time-to-live time-to-live - 1
-  ;][
-  ;  let nb-offers-sent-old [nb-offers-sent] of factory factory-owner
-  ;  let nb-offers-sent-new nb-offers-sent-old - nb-labor
-  ;  ask factory factory-owner [set nb-offers-sent nb-offers-sent-new]
-  ;  die
-  ;]
+    set time-to-live time-to-live - 1
+  ][
+    let nb-offers-sent-old [nb-offers-sent] of factory factory-owner
+    let nb-offers-sent-new nb-offers-sent-old - nb-labor
+    ask factory factory-owner [set nb-offers-sent nb-offers-sent-new]
+    die
+  ]
   set label nb-labor
 end
 
 to update-cars
-  update-wandering-agent
+  ifelse time-to-drive > 0 [
+    update-wandering-agent
+    set time-to-drive time-to-drive - 1
+  ][
+    let nb-people-old [nb-people] of house house-owner
+    let nb-people-new nb-people-old + nb-passengers
+    ask house house-owner [set nb-people nb-people-new]
+    die
+  ]
   set label nb-passengers
 end
 
