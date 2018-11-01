@@ -1,34 +1,81 @@
-globals [road-color intersection-color offer-color offers-ttl cars-ttl]
+; At time A, every business releases offers for every job they have
+; Offers roam around from time A to time B
+; If a house sees an offer, they send out people in cars
+; At time B every roaming offer dies
+; Cars roam around from time A to time C
+; At time C every car still roaming dies
+; At time D, everyone leaves work and gets in a car
+; Cars roam around from time D to time E
+; At time E, every house is filled back up, everyone becomes unemployed and the roaming cars die
 
-breed [factories factory]
-factories-own [nb-jobs nb-workers nb-offers-sent]
+globals [
+  dayLength ; Number of ticks in a day
+  time ; Current tick of the day
+  timeReleaseOffers ; Number of ticks to wait after a new day starts for businesses to release offers
+  timeLeaveHome ; Number of ticks to wait after a new day starts for people to leave their home to go work
+  timeLeaveWork ; Number of ticks to wait after a new day starts for people to leave work to go home
+  timeSleep ; Number of ticks to wait after a new day starts for people to go to sleep
 
-breed [houses house]
-houses-own [nb-residents nb-people]
+  roadColor ; Color of road patches
+  intersectionColor ; Color of intersection patches
+  offerSpeed ; Speed of offers
+  carSpeed ; Speed of cars
+]
 
-breed [offers offer]
-offers-own [factory-owner speed nb-labor time-to-live]
+breed [Businesses Business]
+businesses-own [
+  nbJobs ; Total number of jobs available at the business
+  nbEmployees ; Number of employees currently working
+]
 
-breed [cars car]
-cars-own [house-owner speed nb-passengers time-to-drive]
+breed [Houses House]
+houses-own [
+  nbResidents ; Total number of people living in the house
+  nbEmployed ; Number of people employed living in the house
+  nbPeople ; Number of people currently in the house
+]
+
+breed [Offers Offer]
+offers-own [
+  speed ; Movement speed of the offer
+  reach ; Number of ticks the offer is still valid for
+  nbOpenJobs ; Number of employees to recruit
+  group ; ID of the group this offer belongs to
+]
+
+breed [Cars Car]
+cars-own [
+  speed ; Movement speed of the car
+  reach ; Number of ticks the car can still drive for
+  nbPassengers ; Number of people in the car
+]
 
 
-
+; Resets the entire game
 to reset
   ca
   reset-ticks
-  set road-color red
-  set intersection-color green
-  set offer-color blue
-  set offers-ttl 100
-  set cars-ttl 20
-  set-default-shape factories "fish"
+
+  set dayLength 2400
+  set time 0
+  set timeReleaseOffers 100
+  set timeLeaveHome 700
+  set timeLeaveWork 1800
+  set timeSleep 2300
+
+  set roadColor red
+  set intersectionColor green
+  set offerSpeed 0.5
+  set carSpeed 0.5
+
+  set-default-shape businesses "house colonial"
   set-default-shape houses "house"
   set-default-shape cars "car"
   set-default-shape offers "circle"
   load
 end
 
+; Load game data from files
 to load
   file-open "roads.txt"
   while [not file-at-end?] [
@@ -36,164 +83,267 @@ to load
     let yA file-read
     let xB file-read
     let yB file-read
-    ask patches with [min list xA xB <= pxcor and pxcor <= max list xA xB and min list yA yB <= pycor and pycor <= max list yA yB] [set pcolor road-color]
+    ask patches with [min list xA xB <= pxcor and pxcor <= max list xA xB and min list yA yB <= pycor and pycor <= max list yA yB] [set pcolor roadColor]
   ]
   file-close
-  file-open "factories.txt"
+  file-open "businesses.txt"
   while [not file-at-end?] [
     let x file-read
     let y file-read
-    let nb-jobs-in file-read
-    create-factories 1 [init-factories x y nb-jobs-in]
+    let :nbJobs file-read
+    let :color file-read
+    create-businesses 1 [initBusiness x y :nbJobs :color]
   ]
   file-close
   file-open "houses.txt"
   while [not file-at-end?] [
     let x file-read
     let y file-read
-    let nb-residents-in file-read
-    create-houses 1 [init-houses x y nb-residents-in]
+    let :nbResidents file-read
+    let :color file-read
+    create-houses 1 [initHouse x y :nbResidents :color]
   ]
   file-close
 end
 
-to init-factories [x y nb-jobs-in]
-  setxy x y
-  set nb-jobs nb-jobs-in
-  set nb-workers 0
-  set nb-offers-sent 0
-  set size 2
-  ask patch x y [set pcolor intersection-color]
-  set label (word nb-workers "/" nb-jobs)
-end
-
-to init-houses [x y nb-residents-in]
-  setxy x y
-  set nb-residents nb-residents-in
-  set nb-people nb-residents-in
-  set size 2
-  ask patch x y [set pcolor intersection-color]
-  set label (word nb-people "/" nb-residents)
-end
-
-to init-offers [x y factory-owner-in nb-labor-in time-to-live-in]
-  setxy x y
-  set factory-owner factory-owner-in
-  set nb-labor nb-labor-in
-  set time-to-live time-to-live-in
-  set speed 1
-  set heading 0
-  set color offer-color
-  set size 1
-end
-
-to init-cars [x y house-owner-in nb-passengers-in time-to-drive-in]
-  setxy x y
-  set house-owner house-owner-in
-  set nb-passengers nb-passengers-in
-  set time-to-drive time-to-drive-in
-  set speed 1
-  set heading 0
-  set size 1
-  set label nb-passengers-in
-end
-
+; Update every tick
 to update
-  ask factories [update-factories]
-  ask houses [update-houses]
-  ask offers [update-offers]
-  ask cars [update-cars]
+  ask businesses [updateBusinesses]
+  ask houses [updateHouses]
+  ask offers [updateOffers]
+  ask cars [updateCars]
   tick
+  set time time + 1
+  if time > dayLength [
+    set time 0
+  ]
 end
 
-to update-factories
-  if nb-workers < nb-jobs [
-    if nb-offers-sent + nb-workers < nb-jobs [
-      let needed nb-jobs - (nb-offers-sent + nb-workers)
-      let owner who
-      hatch-offers 1 [init-offers xcor ycor owner needed offers-ttl]
-      set nb-offers-sent nb-offers-sent + needed
-    ]
 
-    let cars-around cars in-radius 1
-    let cars-around-list []
-    ask cars-around [set cars-around-list lput self cars-around-list]
-    foreach cars-around-list [car-here ->
-      let nb-applicants [nb-passengers] of car-here
-      let nb-jobs-left nb-jobs - nb-workers
-      ifelse nb-applicants <= nb-jobs-left [
-        set nb-workers nb-workers + nb-applicants
-        ask car-here [die]
-      ][
-        ask car-here [set nb-passengers nb-passengers - nb-jobs-left]
-        set nb-workers nb-jobs
+
+; Businesses
+
+to initBusiness [x y :nbJobs :color]
+  setxy x y
+  set nbJobs :nbJobs
+  set color :color
+  set nbEmployees 0
+
+  set size 2
+  ask patch x y [set pcolor intersectionColor]
+  set label (word nbEmployees " | " nbJobs)
+end
+
+to updateBusinesses
+  let :nbOpenJobs nbJobs - nbEmployees
+  ; Working hours
+  ifelse timeReleaseOffers < time and time < timeLeaveWork [
+    welcomeEmployees
+  ][
+    ifelse time = timeReleaseOffers [
+      startWorkday
+    ][
+      if time = timeLeaveWork [
+        endWorkday
       ]
     ]
   ]
-  set label (word nb-workers "/" nb-jobs)
+
+  set label (word nbEmployees " | " nbJobs)
 end
 
-to update-houses
-  if nb-people > 0 [
-    let offers-around offers in-radius 1
-    let offers-around-list []
-    ask offers-around [set offers-around-list lput self offers-around-list]
-    let owner who
-    foreach offers-around-list [offer-here ->
-      let needed [nb-labor] of offer-here
-      ifelse needed <= nb-people [
-        set nb-people nb-people - needed
-        hatch-cars 1 [init-cars xcor ycor owner needed cars-ttl]
-        ask offer-here [die]
+to welcomeEmployees
+  if nbJobs - nbEmployees > 0 [
+    let carsAround cars in-radius 1.5
+    ask carsAround [
+      let :nbOpenJobs [nbJobs - nbEmployees] of myself
+      ifelse nbPassengers <= :nbOpenJobs [
+        ask myself [set nbEmployees nbEmployees + [nbPassengers] of myself]
+        die
       ][
-        let nb-passengers-new nb-people
-        let nb-offers-left [nb-labor] of offer-here - nb-passengers-new
-        ask offer-here [set nb-labor nb-offers-left]
-        hatch-cars 1 [init-cars xcor ycor owner nb-passengers-new cars-ttl]
-        set nb-people 0
+        ask myself [set nbEmployees nbJobs]
+        set nbPassengers nbPassengers - :nbOpenJobs
       ]
     ]
   ]
-  set label (word nb-people "/" nb-residents)
 end
 
-to update-offers
-  ifelse time-to-live > 0 [
-    update-wandering-agent
-    set time-to-live time-to-live - 1
+to startWorkday
+  if nbJobs > 0 [
+    let :reach timeLeaveHome - timeReleaseOffers
+    hatch-offers 1 [initOffer xcor ycor :reach [nbJobs] of myself -1]
+  ]
+end
+
+to endWorkday
+  if nbEmployees > 0 [
+    let :nbCars random nbEmployees + 1
+    let :nbPassengers floor (nbEmployees / :nbCars)
+    let :nbPassengersLeft nbEmployees mod :nbCars
+
+    let :reach timeSleep - timeLeaveWork
+    hatch-cars :nbCars [initCar xcor ycor :reach :nbPassengers]
+    if :nbPassengersLeft > 0 [
+      hatch-cars 1 [initCar xcor ycor :reach :nbPassengersLeft]
+    ]
+    set nbEmployees 0
+  ]
+end
+
+
+; Houses
+
+to initHouse [x y :nbResidents :color]
+  setxy x y
+  set nbResidents :nbResidents
+  set color :color
+  set nbPeople nbResidents
+  set nbEmployed 0
+
+  set size 2
+  ask patch x y [set pcolor intersectionColor]
+  set label (word nbEmployed " | " nbPeople " | " nbResidents)
+end
+
+to updateHouses
+  ifelse timeReleaseOffers <= time and time < timeLeaveHome [
+    findJob
   ][
-    let nb-offers-sent-old [nb-offers-sent] of factory factory-owner
-    let nb-offers-sent-new nb-offers-sent-old - nb-labor
-    ask factory factory-owner [set nb-offers-sent nb-offers-sent-new]
+    ifelse time = timeLeaveHome [
+      goWorking
+    ][
+      ifelse timeLeaveWork <= time and time < timeSleep [
+        getHome
+      ][
+        if time = timeSleep [
+          goSleep
+        ]
+      ]
+    ]
+  ]
+
+  set label (word nbEmployed " | " nbPeople " | " nbResidents)
+end
+
+to findJob
+  if nbEmployed < nbPeople [
+    let offersAround offers in-radius 1.5
+    ask offersAround [
+      let :nbUnemployed [nbPeople - nbEmployed] of myself
+      ifelse nbOpenJobs <= :nbUnemployed [
+        ask myself [getHired [nbOpenJobs] of myself]
+        die
+      ][
+        set nbOpenJobs nbOpenJobs - :nbUnemployed
+        ask myself [getHired :nbUnemployed]
+      ]
+    ]
+  ]
+end
+
+to getHired [:nbJobs]
+  set nbEmployed nbEmployed + :nbJobs
+end
+
+to goWorking
+  if nbEmployed > 0 [
+    let :reach timeLeaveWork - time - dayLength / 24 ; Can drive until 1h before work closes
+    set nbPeople nbResidents - nbEmployed
+    hatch-cars 1 [initCar xcor ycor :reach [nbEmployed] of myself]
+  ]
+end
+
+to getHome
+  if nbPeople < nbResidents [
+    let carsAround cars in-radius 1.5
+    ask carsAround [
+      let :nbMissing [nbResidents - nbPeople] of myself
+      ifelse nbPassengers <= :nbMissing [
+        ask myself [set nbPeople nbPeople + [nbPassengers] of myself]
+        die
+      ][
+        ask myself [set nbPeople nbResidents]
+        set nbPassengers nbPassengers - :nbMissing
+      ]
+    ]
+  ]
+end
+
+to goSleep
+  set nbPeople nbResidents
+  set nbEmployed 0
+end
+
+; Roaming Agents
+
+to initRoamingAgent [x y :speed :reach]
+  setxy x y
+  set speed :speed
+  set reach :reach
+
+  set heading 0
+end
+
+to updateRoamingAgent
+  ifelse reach > 0 [
+    if distance patch-here < speed / 2 [
+      move-to patch-here
+      let frontSide patch-ahead 1
+      if [pcolor] of patch-here = intersectionColor or [pcolor] of frontSide != roadColor [
+        let leftSide patch-left-and-ahead 90 1
+        let rightSide patch-right-and-ahead 90 1
+        let backSide patch-ahead -1
+        let roadPatches (patch-set frontSide leftSide rightSide backSide)
+        set roadPatches roadPatches with [pcolor = roadColor]
+        let target one-of roadPatches
+        if target != nobody [
+          face target
+        ]
+      ]
+    ]
+    fd speed
+    set reach reach - 1
+  ][
     die
   ]
-  set label nb-labor
 end
 
-to update-cars
-  ifelse time-to-drive > 0 [
-    update-wandering-agent
-    set time-to-drive time-to-drive - 1
+
+; Offers
+
+to initOffer [x y :reach :nbOpenJobs :group]
+  initRoamingAgent x y offerSpeed :reach
+  set nbOpenJobs :nbOpenJobs
+  ifelse :group = -1 [
+    set group who
   ][
-    let nb-people-old [nb-people] of house house-owner
-    let nb-people-new nb-people-old + nb-passengers
-    ask house house-owner [set nb-people nb-people-new]
-    die
+    set group :group
   ]
-  set label nb-passengers
+
+  set size 1
+  set label nbOpenJobs
 end
 
-to update-wandering-agent
-  let front-side patch-ahead 1
-  if [pcolor] of patch-here = intersection-color or [pcolor] of front-side != road-color [
-    let left-side patch-left-and-ahead 90 1
-    let right-side patch-right-and-ahead 90 1
-    let back-side patch-ahead -1
-    let road-patches (patch-set front-side left-side right-side back-side)
-    set road-patches road-patches with [pcolor = road-color]
-    set heading towards one-of road-patches
-  ]
-  fd speed
+to updateOffers
+  updateRoamingAgent
+  set label nbOpenJobs
+end
+
+
+
+; Cars
+
+to initCar [x y :reach :nbPassengers]
+  initRoamingAgent x y carSpeed :reach
+  set nbPassengers :nbPassengers
+
+  set size 1
+  set label nbPassengers
+end
+
+to updateCars
+  updateRoamingAgent
+  set label nbPassengers
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -265,6 +415,23 @@ BUTTON
 NIL
 update
 T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+96
+73
+159
+106
+step
+update
+NIL
 1
 T
 OBSERVER
@@ -419,6 +586,26 @@ Circle -16777216 true false 60 75 60
 Circle -16777216 true false 180 75 60
 Polygon -16777216 true false 150 168 90 184 62 210 47 232 67 244 90 220 109 205 150 198 192 205 210 220 227 242 251 229 236 206 212 183
 
+factory
+false
+0
+Rectangle -7500403 true true 76 194 285 270
+Rectangle -7500403 true true 36 95 59 231
+Rectangle -16777216 true false 90 210 270 240
+Line -7500403 true 90 195 90 255
+Line -7500403 true 120 195 120 255
+Line -7500403 true 150 195 150 240
+Line -7500403 true 180 195 180 255
+Line -7500403 true 210 210 210 240
+Line -7500403 true 240 210 240 240
+Line -7500403 true 90 225 270 225
+Circle -1 true false 37 73 32
+Circle -1 true false 55 38 54
+Circle -1 true false 96 21 42
+Circle -1 true false 105 40 32
+Circle -1 true false 129 19 42
+Rectangle -7500403 true true 14 228 78 270
+
 fish
 false
 0
@@ -460,6 +647,23 @@ Rectangle -7500403 true true 45 120 255 285
 Rectangle -16777216 true false 120 210 180 285
 Polygon -7500403 true true 15 120 150 15 285 120
 Line -16777216 false 30 120 270 120
+
+house colonial
+false
+0
+Rectangle -7500403 true true 270 75 285 255
+Rectangle -7500403 true true 45 135 270 255
+Rectangle -16777216 true false 124 195 187 256
+Rectangle -16777216 true false 60 195 105 240
+Rectangle -16777216 true false 60 150 105 180
+Rectangle -16777216 true false 210 150 255 180
+Line -16777216 false 270 135 270 255
+Polygon -7500403 true true 30 135 285 135 240 90 75 90
+Line -16777216 false 30 135 285 135
+Line -16777216 false 255 105 285 135
+Line -7500403 true 154 195 154 255
+Rectangle -16777216 true false 210 195 255 240
+Rectangle -16777216 true false 135 150 180 180
 
 leaf
 false
@@ -544,6 +748,68 @@ Circle -7500403 true true 60 60 180
 Circle -16777216 true false 90 90 120
 Circle -7500403 true true 120 120 60
 
+train
+false
+0
+Rectangle -7500403 true true 30 105 240 150
+Polygon -7500403 true true 240 105 270 30 180 30 210 105
+Polygon -7500403 true true 195 180 270 180 300 210 195 210
+Circle -7500403 true true 0 165 90
+Circle -7500403 true true 240 225 30
+Circle -7500403 true true 90 165 90
+Circle -7500403 true true 195 225 30
+Rectangle -7500403 true true 0 30 105 150
+Rectangle -16777216 true false 30 60 75 105
+Polygon -7500403 true true 195 180 165 150 240 150 240 180
+Rectangle -7500403 true true 135 75 165 105
+Rectangle -7500403 true true 225 120 255 150
+Rectangle -16777216 true false 30 203 150 218
+
+train passenger car
+false
+0
+Polygon -7500403 true true 15 206 15 150 15 135 30 120 270 120 285 135 285 150 285 206 270 210 30 210
+Circle -16777216 true false 240 195 30
+Circle -16777216 true false 210 195 30
+Circle -16777216 true false 60 195 30
+Circle -16777216 true false 30 195 30
+Rectangle -16777216 true false 30 140 268 165
+Line -7500403 true 60 135 60 165
+Line -7500403 true 60 135 60 165
+Line -7500403 true 90 135 90 165
+Line -7500403 true 120 135 120 165
+Line -7500403 true 150 135 150 165
+Line -7500403 true 180 135 180 165
+Line -7500403 true 210 135 210 165
+Line -7500403 true 240 135 240 165
+Rectangle -16777216 true false 5 195 19 207
+Rectangle -16777216 true false 281 195 295 207
+Rectangle -13345367 true false 15 165 285 173
+Rectangle -2674135 true false 15 180 285 188
+
+train passenger engine
+false
+0
+Rectangle -7500403 true true 0 180 300 195
+Polygon -7500403 true true 283 161 274 128 255 114 231 105 165 105 15 105 15 150 15 195 15 210 285 210
+Circle -16777216 true false 17 195 30
+Circle -16777216 true false 50 195 30
+Circle -16777216 true false 220 195 30
+Circle -16777216 true false 253 195 30
+Rectangle -16777216 false false 0 195 300 180
+Rectangle -1 true false 11 111 18 118
+Rectangle -1 true false 270 129 277 136
+Rectangle -16777216 true false 91 195 210 210
+Rectangle -16777216 true false 1 180 10 195
+Line -16777216 false 290 150 291 182
+Rectangle -16777216 true false 165 90 195 90
+Rectangle -16777216 true false 290 180 299 195
+Polygon -13345367 true false 285 180 267 158 239 135 180 120 15 120 16 113 180 113 240 120 270 135 282 154
+Polygon -2674135 true false 284 179 267 160 239 139 180 127 15 127 16 120 180 120 240 127 270 142 282 161
+Rectangle -16777216 true false 210 115 254 135
+Line -7500403 true 225 105 225 150
+Line -7500403 true 240 105 240 150
+
 tree
 false
 0
@@ -580,6 +846,17 @@ Circle -7500403 false true 24 174 42
 Circle -7500403 false true 144 174 42
 Circle -7500403 false true 234 174 42
 
+truck cab only
+false
+0
+Polygon -7500403 true true 296 193 296 150 259 134 244 104 208 104 207 194
+Rectangle -1 true false 195 60 195 105
+Polygon -16777216 true false 238 112 252 141 219 141 218 112
+Circle -16777216 true false 234 174 42
+Rectangle -7500403 true true 181 185 214 194
+Circle -16777216 true false 144 174 42
+Rectangle -1 true false 291 158 300 173
+
 turtle
 true
 0
@@ -589,6 +866,34 @@ Polygon -10899396 true false 105 90 75 75 55 75 40 89 31 108 39 124 60 105 75 10
 Polygon -10899396 true false 132 85 134 64 107 51 108 17 150 2 192 18 192 52 169 65 172 87
 Polygon -10899396 true false 85 204 60 233 54 254 72 266 85 252 107 210
 Polygon -7500403 true true 119 75 179 75 209 101 224 135 220 225 175 261 128 261 81 224 74 135 88 99
+
+ufo side
+false
+0
+Polygon -1 true false 0 150 15 180 60 210 120 225 180 225 240 210 285 180 300 150 300 135 285 120 240 105 195 105 150 105 105 105 60 105 15 120 0 135
+Polygon -16777216 false false 105 105 60 105 15 120 0 135 0 150 15 180 60 210 120 225 180 225 240 210 285 180 300 150 300 135 285 120 240 105 210 105
+Polygon -7500403 true true 60 131 90 161 135 176 165 176 210 161 240 131 225 101 195 71 150 60 105 71 75 101
+Circle -16777216 false false 255 135 30
+Circle -16777216 false false 180 180 30
+Circle -16777216 false false 90 180 30
+Circle -16777216 false false 15 135 30
+Circle -7500403 true true 15 135 30
+Circle -7500403 true true 90 180 30
+Circle -7500403 true true 180 180 30
+Circle -7500403 true true 255 135 30
+Polygon -16777216 false false 150 59 105 70 75 100 60 130 90 160 135 175 165 175 210 160 240 130 225 100 195 70
+
+van side
+false
+0
+Polygon -7500403 true true 26 147 18 125 36 61 161 61 177 67 195 90 242 97 262 110 273 129 260 149
+Circle -16777216 true false 43 123 42
+Circle -16777216 true false 194 124 42
+Polygon -16777216 true false 45 68 37 95 183 96 169 69
+Line -7500403 true 62 65 62 103
+Line -7500403 true 115 68 120 100
+Polygon -1 true false 271 127 258 126 257 114 261 109
+Rectangle -16777216 true false 19 131 27 142
 
 wheel
 false
