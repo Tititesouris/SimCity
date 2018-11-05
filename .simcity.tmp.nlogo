@@ -17,25 +17,30 @@ globals [
   timeSleep ; Number of ticks to wait after a new day starts for people to go to sleep
 
   roadColor ; Color of road patches
-  intersectionColor ; Color of intersection patches
   offerSpeed ; Speed of offers
   carSpeed ; Speed of cars
 ]
 
-breed [Businesses Business]
+breed [intersections intersection]
+intersections-own [
+  directions
+]
+
+
+breed [businesses business]
 businesses-own [
   nbJobs ; Total number of jobs available at the business
   nbEmployees ; Number of employees currently working
 ]
 
-breed [Houses House]
+breed [houses house]
 houses-own [
   nbResidents ; Total number of people living in the house
   nbEmployed ; Number of people employed living in the house
   nbPeople ; Number of people currently in the house
 ]
 
-breed [Offers Offer]
+breed [offers offer]
 offers-own [
   speed ; Movement speed of the offer
   reach ; Number of ticks the offer is still valid for
@@ -43,12 +48,13 @@ offers-own [
   group ; ID of the group this offer belongs to
 ]
 
-breed [Cars Car]
+breed [cars car]
 cars-own [
   speed ; Movement speed of the car
   reach ; Number of ticks the car can still drive for
   nbPassengers ; Number of people in the car
 ]
+
 
 
 ; Resets the entire game
@@ -64,7 +70,6 @@ to reset
   set timeSleep 2300
 
   set roadColor red
-  set intersectionColor green
   set offerSpeed 0.5
   set carSpeed 0.5
 
@@ -77,8 +82,22 @@ end
 
 ; Load game data from files
 to load
+  file-open "intersections.txt"
+  while [not file-at-end?] [
+    let x file-read
+    let y file-read
+    let north (file-read = 1)
+    let east (file-read = 1)
+    let south (file-read = 1)
+    let west (file-read = 1)
+    create-intersections 1 [initIntersection x y north east south west]
+  ]
+  file-close
   file-open "roads.txt"
   while [not file-at-end?] [
+    ;let a file-read
+    ;let b file-read
+    ;ask one-of intersections with [intersectionId = a] [create-road-with one-of intersections with [intersectionId = b]]
     let xA file-read
     let yA file-read
     let xB file-read
@@ -119,6 +138,42 @@ to update
   ]
 end
 
+; Roads
+
+to initIntersection [x y :north :east :south :west]
+  setxy x y
+  set heading 0
+  set directions []
+  let :nbDirections 0
+  let :direction 0
+  if :north [
+    set directions lput patch-ahead 1 directions
+    set :nbDirections :nbDirections + 1
+    set :direction 0
+  ]
+  if :east [
+    set directions lput patch-right-and-ahead 90 1 directions
+    set :nbDirections :nbDirections + 1
+    set :direction 90
+  ]
+  if :south [
+    set directions lput patch-ahead -1 directions
+    set :nbDirections :nbDirections + 1
+    if not :west [
+      set :direction 180
+    ]
+  ]
+  if :west [
+    set directions lput patch-left-and-ahead 90 1 directions
+    set :nbDirections :nbDirections + 1
+    if not :north [
+      set :direction 270
+    ]
+  ]
+  set shape word "intersection " :nbDirections
+  set color black
+  set heading :direction
+end
 
 
 ; Businesses
@@ -130,7 +185,6 @@ to initBusiness [x y :nbJobs :color]
   set nbEmployees 0
 
   set size 2
-  ask patch x y [set pcolor intersectionColor]
   set label (word nbEmployees " | " nbJobs)
 end
 
@@ -201,7 +255,6 @@ to initHouse [x y :nbResidents :color]
   set nbEmployed 0
 
   set size 2
-  ask patch x y [set pcolor intersectionColor]
   set label (word nbEmployed " | " nbPeople " | " nbResidents)
 end
 
@@ -281,28 +334,30 @@ to initRoamingAgent [x y :speed :reach]
   set speed :speed
   set reach :reach
 
-  set heading 0
+  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
 to updateRoamingAgent
   ifelse reach > 0 [
-    if distance patch-here < speed / 2 [
-      move-to patch-here
-      let frontSide patch-ahead 1
-      if [pcolor] of patch-here = intersectionColor or [pcolor] of frontSide != roadColor [
-        let leftSide patch-left-and-ahead 90 1
-        let rightSide patch-right-and-ahead 90 1
-        let backSide patch-ahead -1
-        let roadPatches (patch-set frontSide leftSide rightSide backSide)
-        set roadPatches roadPatches with [pcolor = roadColor]
-        let target one-of roadPatches
-        if target != nobody [
-          face target
-        ]
+    let :intersection one-of intersections in-radius (speed / 2)
+    let :patchAhead patch-ahead 1
+    if (:intersection != nobody) or ((:patchAhead != nobody) and ([pcolor] of :patchAhead != roadColor)) [
+      let :directions []
+      ifelse :intersection = nobody [
+        set :directions patches in-radius 1 with [pcolor = roadColor]
+      ][
+        set :directions [directions] of :intersection
+      ]
+      let target one-of :directions
+      if target != nobody [
+        face target
       ]
     ]
     fd speed
     set reach reach - 1
+    if distance patch-here < (speed / 2) [
+      move-to patch-here
+    ]
   ][
     die
   ]
@@ -347,26 +402,26 @@ to updateCars
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-265
-10
-1379
-531
+349
+20
+1430
+685
 -1
 -1
-16.52
+16.015
 1
 20
 1
 1
 1
 0
-1
-1
+0
+0
 1
 -33
 33
--15
-15
+-20
+20
 1
 1
 1
@@ -665,6 +720,48 @@ Line -7500403 true 154 195 154 255
 Rectangle -16777216 true false 210 195 255 240
 Rectangle -16777216 true false 135 150 180 180
 
+intersection 0
+false
+0
+Polygon -7500403 true true 270 75 225 30 30 225 75 270
+Polygon -7500403 true true 30 75 75 30 270 225 225 270
+
+intersection 1
+true
+0
+Polygon -7500403 true true 150 0 105 75 195 75
+Polygon -7500403 true true 135 74 135 150 139 159 147 164 154 164 161 159 165 151 165 74
+
+intersection 2
+true
+0
+Polygon -7500403 true true 0 150 75 195 75 105
+Polygon -7500403 true true 74 165 150 165 159 161 164 153 164 146 159 139 151 135 74 135
+Polygon -7500403 true true 150 0 105 75 195 75
+Polygon -7500403 true true 135 74 135 150 139 159 147 164 154 164 161 159 165 151 165 74
+
+intersection 3
+true
+0
+Polygon -7500403 true true 0 150 75 195 75 105
+Polygon -7500403 true true 74 165 150 165 159 161 164 153 164 146 159 139 151 135 74 135
+Polygon -7500403 true true 150 300 105 225 195 225
+Polygon -7500403 true true 135 226 135 150 139 141 147 136 154 136 161 141 165 149 165 226
+Polygon -7500403 true true 150 0 105 75 195 75
+Polygon -7500403 true true 135 74 135 150 139 159 147 164 154 164 161 159 165 151 165 74
+
+intersection 4
+true
+0
+Polygon -7500403 true true 150 300 105 225 195 225
+Polygon -7500403 true true 135 226 135 150 139 141 147 136 154 136 161 141 165 149 165 226
+Polygon -7500403 true true 0 150 75 105 75 195
+Polygon -7500403 true true 74 135 150 135 159 139 164 147 164 154 159 161 151 165 74 165
+Polygon -7500403 true true 300 150 225 105 225 195
+Polygon -7500403 true true 226 135 150 135 141 139 136 147 136 154 141 161 149 165 226 165
+Polygon -7500403 true true 150 0 105 75 195 75
+Polygon -7500403 true true 135 74 135 150 139 159 147 164 154 164 161 159 165 151 165 74
+
 leaf
 false
 0
@@ -722,6 +819,12 @@ Rectangle -1 true true 65 221 80 296
 Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
 Polygon -7500403 true false 276 85 285 105 302 99 294 83
 Polygon -7500403 true false 219 85 210 105 193 99 201 83
+
+spinner
+true
+0
+Polygon -7500403 true true 150 0 105 75 195 75
+Polygon -7500403 true true 135 74 135 150 139 159 147 164 154 164 161 159 165 151 165 74
 
 square
 false
