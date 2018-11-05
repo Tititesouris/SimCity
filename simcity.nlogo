@@ -281,9 +281,9 @@ to findJob
       let :nbUnemployed [nbPeople - nbEmployed] of myself
       ifelse nbOpenJobs <= :nbUnemployed [
         ask myself [getHired [nbOpenJobs] of myself]
-        die
+        ask offers with [group = [group] of myself] [die]
       ][
-        set nbOpenJobs nbOpenJobs - :nbUnemployed
+        ask offers with [group = [group] of myself] [set nbOpenJobs nbOpenJobs - :nbUnemployed]
         ask myself [getHired :nbUnemployed]
       ]
     ]
@@ -377,6 +377,11 @@ end
 
 to updateOffers
   updateRoamingAgent
+  let :intersection one-of intersections in-radius (speed / 2)
+  if :intersection != nobody [
+    hatch-offers 1
+  ]
+
   set label nbOpenJobs
 end
 

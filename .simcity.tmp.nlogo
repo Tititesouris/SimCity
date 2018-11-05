@@ -26,7 +26,6 @@ intersections-own [
   directions
 ]
 
-
 breed [businesses business]
 businesses-own [
   nbJobs ; Total number of jobs available at the business
@@ -95,9 +94,6 @@ to load
   file-close
   file-open "roads.txt"
   while [not file-at-end?] [
-    ;let a file-read
-    ;let b file-read
-    ;ask one-of intersections with [intersectionId = a] [create-road-with one-of intersections with [intersectionId = b]]
     let xA file-read
     let yA file-read
     let xB file-read
@@ -285,7 +281,7 @@ to findJob
       let :nbUnemployed [nbPeople - nbEmployed] of myself
       ifelse nbOpenJobs <= :nbUnemployed [
         ask myself [getHired [nbOpenJobs] of myself]
-        die
+        ask offers with [group = [group] of myself] [die]
       ][
         set nbOpenJobs nbOpenJobs - :nbUnemployed
         ask myself [getHired :nbUnemployed]
@@ -381,6 +377,11 @@ end
 
 to updateOffers
   updateRoamingAgent
+  let :intersection one-of intersections in-radius (speed / 2)
+  if :intersection != nobody [
+    hatch-offers 1
+  ]
+
   set label nbOpenJobs
 end
 
