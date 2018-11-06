@@ -343,6 +343,7 @@ to updateRoamingAgent
         set :directions patches in-radius 1 with [pcolor = roadColor]
       ][
         set :directions [directions] of :intersection
+        set :directions remove patch-ahead -1 :directions
       ]
       let target one-of :directions
       if target != nobody [

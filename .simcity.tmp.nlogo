@@ -283,7 +283,7 @@ to findJob
         ask myself [getHired [nbOpenJobs] of myself]
         ask offers with [group = [group] of myself] [die]
       ][
-        set nbOpenJobs nbOpenJobs - :nbUnemployed
+        ask offers with [group = [group] of myself] [set nbOpenJobs nbOpenJobs - :nbUnemployed]
         ask myself [getHired :nbUnemployed]
       ]
     ]
@@ -343,6 +343,7 @@ to updateRoamingAgent
         set :directions patches in-radius 1 with [pcolor = roadColor]
       ][
         set :directions [directions] of :intersection
+        set :directions remove patch-ahead -1 :directions
       ]
       let target one-of :directions
       if target != nobody [
@@ -379,6 +380,8 @@ to updateOffers
   updateRoamingAgent
   let :intersection one-of intersections in-radius (speed / 2)
   if :intersection != nobody [
+    let :directions [directions] of :intersection
+    set :directions remove patch-ahead 1 :directions
     hatch-offers 1
   ]
 
