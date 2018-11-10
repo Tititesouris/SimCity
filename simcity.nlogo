@@ -333,6 +333,30 @@ to initRoamingAgent [x y :speed :reach]
   face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
+to updateRoamingAgent [:roamingAgentIntersectionBehavior]
+  ifelse reach > 0 [
+    fd speed
+    set reach reach - 1
+    if distance patch-here < (speed / 2) [
+      move-to patch-here
+
+      let :intersection one-of intersections-on patch-here
+      ifelse :intersection != nobody [
+        (run :roamingAgentIntersectionBehavior :intersection)
+      ][
+        let :patchAhead patch-ahead 1
+        if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
+          let :directions []
+          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor]]
+          face one-of :directions
+        ]
+      ]
+    ]
+  ][
+    die
+  ]
+end
+
 ; Offers
 
 to initOffer [x y :reach :nbOpenJobs :group]
@@ -349,40 +373,23 @@ to initOffer [x y :reach :nbOpenJobs :group]
 end
 
 to updateOffers
-  ifelse reach > 0 [
-    fd speed
-    set reach reach - 1
-    if distance patch-here < (speed / 2) [
-      move-to patch-here
-
-      let :intersection one-of intersections-on patch-here
-      ifelse :intersection != nobody [
-        let :patchBehind patch-ahead -1
-        let :directions [directions] of :intersection
-        if (length :directions > 1) or (one-of :directions != :patchBehind) [
-          set :directions remove :patchBehind :directions
-        ]
-        if not empty? :directions [
-          face item 0 :directions
-          set :directions remove-item 0 :directions
-          ask patch-set :directions [ask myself [let :direction myself hatch-offers 1 [face :direction fd speed]]]
-        ]
-      ][
-        let :patchAhead patch-ahead 1
-        if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
-          let :directions []
-          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor]]
-          face one-of :directions
-        ]
-      ]
-    ]
-  ][
-    die
-  ]
+  updateRoamingAgent [[:intersection] -> (offersIntersectionBehavior :intersection)]
 
   set label nbOpenJobs
 end
 
+to offersIntersectionBehavior [:intersection]
+  let :patchBehind patch-ahead -1
+  let :directions [directions] of :intersection
+  if (length :directions > 1) or (one-of :directions != :patchBehind) [
+    set :directions remove :patchBehind :directions
+  ]
+  if not empty? :directions [
+    face item 0 :directions
+    set :directions remove-item 0 :directions
+    ask patch-set :directions [ask myself [let :direction myself hatch-offers 1 [face :direction fd speed]]]
+  ]
+end
 
 ; Cars
 
@@ -395,34 +402,18 @@ to initCar [x y :reach :nbPassengers]
 end
 
 to updateCars
-  ifelse reach > 0 [
-    fd speed
-    set reach reach - 1
-    if distance patch-here < (speed / 2) [
-      move-to patch-here
-
-      let :intersection one-of intersections-on patch-here
-      ifelse :intersection != nobody [
-        let :directions [directions] of :intersection
-        set :directions remove patch-ahead -1 :directions
-        let :direction one-of :directions
-        if :direction != nobody [
-          face :direction
-        ]
-      ][
-        let :patchAhead patch-ahead 1
-        if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
-          let :directions []
-          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor]]
-          face one-of :directions
-        ]
-      ]
-    ]
-  ][
-    die
-  ]
+  updateRoamingAgent [[:intersection] -> (carsIntersectionBehavior :intersection)]
 
   set label nbPassengers
+end
+
+to carsIntersectionBehavior [:intersection]
+  let :directions [directions] of :intersection
+  set :directions remove patch-ahead -1 :directions
+  let :direction one-of :directions
+  if :direction != nobody [
+    face :direction
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
