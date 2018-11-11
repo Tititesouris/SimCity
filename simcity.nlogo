@@ -604,7 +604,7 @@ end
 
 to updatePowerplant
   if time mod hourLength = 0 [
-    hatch-electricities 1 [initResource xcor ycor 1000 [production] of myself]
+    hatch-electricities 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
   ]
 end
 
@@ -624,7 +624,7 @@ end
 to updatePump
   updateResourceConsumer
   if time mod hourLength = 0 [
-    hatch-waters 1 [initResource xcor ycor 1000 [production] of myself]
+    hatch-waters 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
   ]
 end
 
@@ -709,10 +709,15 @@ end
 
 to cloneIntersectionBehavior [:intersection]
   let :idIntersection [who] of :intersection
+  let :resources (turtle-set offers electricities waters) with [group = [group] of myself]
   ifelse member? :idIntersection visitedIntersections [
-    die
+    ifelse count :resources > 1 [
+      die
+    ][
+      set visitedIntersections []
+    ]
   ][
-    ask (turtle-set offers electricities waters) with [group = [group] of myself] [set visitedIntersections lput :idIntersection visitedIntersections]
+    ask :resources [set visitedIntersections lput :idIntersection visitedIntersections]
 
     let :directions [directions] of :intersection
     if not empty? :directions [
