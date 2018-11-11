@@ -10,15 +10,25 @@
 
 globals [
   dayLength ; Number of ticks in a day
+  hourLength ; Number of ticks in an hour
   time ; Current tick of the day
   timeReleaseOffers ; Number of ticks to wait after a new day starts for businesses to release offers
   timeLeaveHome ; Number of ticks to wait after a new day starts for people to leave their home to go work
   timeLeaveWork ; Number of ticks to wait after a new day starts for people to leave work to go home
   timeSleep ; Number of ticks to wait after a new day starts for people to go to sleep
 
-  roadColor ; Color of road patches
+  warningEmployement ; Warning sign when employement is not satisfying
+  warningWorkforce ; Warning sign when the workforce is not satisfying
+  warningElectricity ; Warning sign when missing electricity
+  warningWater ; Warning sign when missing water
+
+  labelColor ; Color of labels
+  roadColor ; Color of the road
+  houseColor ; Base color of a house
+
   offerSpeed ; Speed of offers
   carSpeed ; Speed of cars
+  resourceSpeed ; Speed of electricity and water
 ]
 
 breed [intersections intersection]
@@ -26,17 +36,45 @@ intersections-own [
   directions
 ]
 
+breed [warnings warning]
+warnings-own [
+  target ; Target the warning is warning about
+  importance ; Number of ticks the warning has been existing
+]
+
 breed [businesses business]
 businesses-own [
+  electricityUsage ; Electricity usage in kWh
+  electricityStored ; Current amount of electricity in the house in kW
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in the house in L
   nbJobs ; Total number of jobs available at the business
   nbEmployees ; Number of employees currently working
 ]
 
 breed [houses house]
 houses-own [
+  electricityUsage ; Electricity usage in kWh
+  electricityStored ; Current amount of electricity in the house in kW
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in the house in L
   nbResidents ; Total number of people living in the house
   nbEmployed ; Number of people employed living in the house
   nbPeople ; Number of people currently in the house
+]
+
+breed [powerplants powerplant]
+powerplants-own [
+  production ; Amount of electricity produced in kWh
+]
+
+breed [pumps pump]
+pumps-own [
+  electricityUsage ; Electricity usage in kWh
+  electricityStored ; Current amount of electricity in the house in kW
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in the house in L
+  production ; Amount of water produced in L/h
 ]
 
 breed [offers offer]
@@ -45,6 +83,7 @@ offers-own [
   reach ; Number of ticks the offer is still valid for
   nbOpenJobs ; Number of employees to recruit
   group ; ID of the group this offer belongs to
+  visitedIntersections ; Intersections visited by this offer
 ]
 
 breed [cars car]
@@ -54,6 +93,31 @@ cars-own [
   nbPassengers ; Number of people in the car
 ]
 
+breed [electricities electricity]
+electricities-own [
+  speed ; Movement speed of the electricity
+  reach ; Number of ticks the electricity is still active for
+  amount ; Amount of electricity in kW
+  group ; ID of the group this electricity belongs to
+  visitedIntersections ; Intersections visited by this electricity
+]
+
+breed [waters water]
+waters-own [
+  speed ; Movement speed of the water
+  reach ; Number of ticks the water is still active for
+  amount ; Amount of water in L
+  group ; ID of the group this water belongs to
+  visitedIntersections ; Intersections visited by this water
+]
+
+breed [betterlabels betterlabel]
+
+to-report clock
+  let :hours floor (time / hourLength)
+  let :minutes floor ((time / hourLength - :hours) * 60)
+  report (word :hours "h" :minutes)
+end
 
 
 ; Resets the entire game
@@ -61,83 +125,188 @@ to reset
   ca
   reset-ticks
 
-  set dayLength 2400
-  set time 0
-  set timeReleaseOffers 100
-  set timeLeaveHome 700
-  set timeLeaveWork 1800
-  set timeSleep 2300
-
-  set roadColor red
-  set offerSpeed 0.5
-  set carSpeed 0.5
-
-  set-default-shape businesses "house colonial"
-  set-default-shape houses "house"
-  set-default-shape cars "car"
-  set-default-shape offers "circle"
   load
 end
 
 ; Load game data from files
 to load
+  file-open "settings.txt"
+  set dayLength file-read
+  set timeReleaseOffers file-read
+  set timeLeaveHome file-read
+  set timeLeaveWork file-read
+  set timeSleep file-read
+  set hourLength dayLength / 24
+  set time 0
+
+  set-default-shape businesses file-read
+  set-default-shape houses file-read
+  set-default-shape powerplants file-read
+  set-default-shape pumps file-read
+  set-default-shape cars file-read
+  set-default-shape offers file-read
+  set-default-shape electricities file-read
+  set-default-shape waters file-read
+  set-default-shape betterlabels "betterlabel"
+  set warningEmployement file-read
+  set warningWorkforce file-read
+  set warningElectricity file-read
+  set warningWater file-read
+
+  let :color file-read
+  ask patches [set pcolor :color]
+  set labelColor file-read
+  set roadColor file-read
+  set houseColor file-read
+
+  set offerSpeed file-read
+  set carSpeed file-read
+  set resourceSpeed file-read
+  file-close
+
   file-open "intersections.txt"
   while [not file-at-end?] [
-    let x file-read
-    let y file-read
-    let north (file-read = 1)
-    let east (file-read = 1)
-    let south (file-read = 1)
-    let west (file-read = 1)
-    create-intersections 1 [initIntersection x y north east south west]
+    let :x file-read
+    let :y file-read
+    let :north (file-read = 1)
+    let :east (file-read = 1)
+    let :south (file-read = 1)
+    let :west (file-read = 1)
+    create-intersections 1 [initIntersection :x :y :north :east :south :west]
   ]
   file-close
+
   file-open "roads.txt"
   while [not file-at-end?] [
-    let xA file-read
-    let yA file-read
-    let xB file-read
-    let yB file-read
-    ask patches with [min list xA xB <= pxcor and pxcor <= max list xA xB and min list yA yB <= pycor and pycor <= max list yA yB] [set pcolor roadColor]
+    let :xA file-read
+    let :yA file-read
+    let :xB file-read
+    let :yB file-read
+    ask patches with [min list :xA :xB <= pxcor and pxcor <= max list :xA :xB and min list :yA :yB <= pycor and pycor <= max list :yA :yB] [set pcolor roadColor]
   ]
   file-close
+
   file-open "businesses.txt"
   while [not file-at-end?] [
-    let x file-read
-    let y file-read
+    let :x file-read
+    let :y file-read
     let :nbJobs file-read
-    let :color file-read
-    create-businesses 1 [initBusiness x y :nbJobs :color]
+    create-businesses 1 [initBusiness :x :y :nbJobs]
   ]
   file-close
+
   file-open "houses.txt"
   while [not file-at-end?] [
-    let x file-read
-    let y file-read
+    let :x file-read
+    let :y file-read
     let :nbResidents file-read
-    let :color file-read
-    create-houses 1 [initHouse x y :nbResidents :color]
+    create-houses 1 [initHouse :x :y :nbResidents]
+  ]
+  file-close
+
+  file-open "powerplants.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    let :production file-read
+    create-powerplants 1 [initPowerplant :x :y :production]
+  ]
+  file-close
+
+  file-open "pumps.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    let :production file-read
+    create-pumps 1 [initPump :x :y :production]
   ]
   file-close
 end
 
+to wiggle [:angle :speed]
+  ifelse ticks mod (2 * :angle) >= :angle [
+    set heading heading - :speed
+  ][
+    set heading heading + :speed
+  ]
+end
+
 ; Update every tick
 to update
-  ask businesses [updateBusinesses]
-  ask houses [updateHouses]
-  ask offers [updateOffers]
-  ask cars [updateCars]
+  ask warnings [updateWarning]
+  ask businesses [updateBusiness]
+  ask houses [updateHouse]
+  ask powerplants [updatePowerplant]
+  ask pumps [updatePump]
+  ask offers [updateResource]
+  ask cars [updateCar]
+  ask electricities [updateResource]
+  ask waters [updateResource]
   tick
   set time time + 1
   if time > dayLength [
     set time 0
   ]
+
+  ask betterlabels [die]
+  if showLabels [
+    ask businesses [
+      let :text (word nbEmployees "/" nbJobs)
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask houses [
+      let :text (word nbEmployed "/" nbResidents)
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask powerplants [
+      let :text production
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask pumps [
+      let :text production
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask offers [
+      let :text nbOpenJobs
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask cars [
+      let :text nbPassengers
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask electricities [
+      let :text amount
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask waters [
+      let :text amount
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+
+  ]
+
+  ifelse showOffers [ask offers [st]][ask offers [ht]]
+  ifelse showElectricity [ask electricities [st]][ask electricities [ht]]
+  ifelse showWater [ask waters [st]][ask waters [ht]]
 end
+
+; Labels
+
+to initBetterlabel [:text]
+  set label :text
+  setxy xcor (ycor - 0.75)
+
+  set size 1.5
+  let :rgb (list (255 - item 0 labelColor) (255 - item 1 labelColor) (255 - item 2 labelColor) 100)
+  set color :rgb
+  set label-color labelColor
+end
+
 
 ; Roads
 
-to initIntersection [x y :north :east :south :west]
-  setxy x y
+to initIntersection [:x :y :north :east :south :west]
+  setxy :x :y
   set heading 0
   set directions []
   let :nbDirections 0
@@ -171,20 +340,120 @@ to initIntersection [x y :north :east :south :west]
   set heading :direction
 end
 
+; Warnings
+
+to initWarning [:x :y :type :target]
+  setxy :x :y
+  set shape :type
+  set target :target
+  set importance 0
+
+  set size 1.5
+  set label ""
+  set color yellow
+  set heading -40
+end
+
+to updateWarning
+  set importance importance + 1
+  ifelse color = yellow and importance > 6 * hourLength [
+    set color orange
+  ][
+    if color = orange and importance > 12 * hourLength [
+      set color red
+    ]
+  ]
+
+  wiggle 40 0.5
+end
+
+; ResourceConsumer
+
+to initResourceConsumer [:electricityUsage :waterUsage]
+  set electricityUsage :electricityUsage
+  set electricityStored 0
+  set waterUsage :waterUsage
+  set waterStored 0
+end
+
+to updateResourceConsumer
+  if time mod hourLength = 0 [
+    let :warnings warnings with [target = [who] of myself]
+    let :electricityWarnings :warnings with [shape = warningElectricity]
+    let :waterWarnings :warnings with [shape = warningWater]
+
+    let :x xcor - 0.5
+    let :y ycor + 0.75
+    let :target who
+
+    ifelse electricityStored > 0 [
+      set electricityStored electricityStored - electricityUsage
+      ask :electricityWarnings [die]
+    ][
+      if (electricityUsage > 0) and (not any? :electricityWarnings) [
+        hatch-warnings 1 [initWarning :x :y warningElectricity :target]
+        set :x :x + 0.5
+      ]
+    ]
+
+    ifelse waterStored > 0 [
+      set waterStored waterStored - waterUsage
+      ask :waterWarnings [die]
+    ][
+      if (waterUsage > 0) and (not any? :waterWarnings) [
+        hatch-warnings 1 [initWarning :x :y warningWater :target]
+      ]
+    ]
+  ]
+
+  let electricityStorage electricityUsage * 2
+  if electricityStored < electricityStorage [
+    let electricitiesAround electricities in-radius 1.5
+    ask electricitiesAround [
+      let :needed [electricityStorage - electricityStored] of myself
+      ifelse amount <= :needed [
+        ask myself [set electricityStored electricityStored + [amount] of myself]
+        ask electricities with [group = [group] of myself] [die]
+      ][
+        ask myself [set electricityStored electricityStorage]
+        ask electricities with [group = [group] of myself] [set amount amount - :needed]
+      ]
+    ]
+  ]
+
+  let waterStorage waterUsage * 2
+  if waterStored < waterUsage [
+    let watersAround waters in-radius 1.5
+    ask watersAround [
+      let :needed [waterStorage - waterStored] of myself
+      ifelse amount <= :needed [
+        ask myself [set waterStored waterStored + [amount] of myself]
+        ask waters with [group = [group] of myself] [die]
+      ][
+        ask myself [set waterStored waterStorage]
+        ask waters with [group = [group] of myself] [set amount amount - :needed]
+      ]
+    ]
+  ]
+
+end
+
 
 ; Businesses
 
-to initBusiness [x y :nbJobs :color]
-  setxy x y
+to initBusiness [:x :y :nbJobs]
+  initResourceConsumer (5 + :nbJobs * 1.5) (:nbJobs * 0.5)
+  setxy :x :y
   set nbJobs :nbJobs
-  set color :color
   set nbEmployees 0
 
   set size 2
-  set label (word nbEmployees " | " nbJobs)
+  set color white
+  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
-to updateBusinesses
+to updateBusiness
+  updateResourceConsumer
   let :nbOpenJobs nbJobs - nbEmployees
   ; Working hours
   ifelse timeReleaseOffers < time and time < timeLeaveWork [
@@ -198,8 +467,6 @@ to updateBusinesses
       ]
     ]
   ]
-
-  set label (word nbEmployees " | " nbJobs)
 end
 
 to welcomeEmployees
@@ -221,7 +488,7 @@ end
 to startWorkday
   if nbJobs > 0 [
     let :reach timeLeaveHome - timeReleaseOffers
-    hatch-offers 1 [initOffer xcor ycor :reach [nbJobs] of myself -1]
+    hatch-offers 1 [initOffer xcor ycor :reach [nbJobs] of myself]
   ]
 end
 
@@ -243,18 +510,20 @@ end
 
 ; Houses
 
-to initHouse [x y :nbResidents :color]
-  setxy x y
+to initHouse [:x :y :nbResidents]
+  initResourceConsumer (3 + :nbResidents * 2) (:nbResidents * 1.5)
+  setxy :x :y
   set nbResidents :nbResidents
-  set color :color
   set nbPeople nbResidents
   set nbEmployed 0
 
   set size 2
-  set label (word nbEmployed " | " nbPeople " | " nbResidents)
+  set color houseColor
+  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
-to updateHouses
+to updateHouse
+  updateResourceConsumer
   ifelse timeReleaseOffers <= time and time < timeLeaveHome [
     findJob
   ][
@@ -270,8 +539,6 @@ to updateHouses
       ]
     ]
   ]
-
-  set label (word nbEmployed " | " nbPeople " | " nbResidents)
 end
 
 to findJob
@@ -296,7 +563,7 @@ end
 
 to goWorking
   if nbEmployed > 0 [
-    let :reach timeLeaveWork - time - dayLength / 24 ; Can drive until 1h before work closes
+    let :reach timeLeaveWork - time - hourLength ; Can drive until 1h before work closes
     set nbPeople nbResidents - nbEmployed
     hatch-cars 1 [initCar xcor ycor :reach [nbEmployed] of myself]
   ]
@@ -323,14 +590,55 @@ to goSleep
   set nbEmployed 0
 end
 
+
+; Powerplants
+
+to initPowerplant [:x :y :production]
+  setxy :x :y
+  set production :production
+
+  set size 2
+  set color yellow
+  face one-of patches in-radius 1 with [pcolor = roadColor]
+end
+
+to updatePowerplant
+  if time mod hourLength = 0 [
+    hatch-electricities 1 [initResource xcor ycor 1000 [production] of myself]
+  ]
+end
+
+
+; Pumps
+
+to initPump [:x :y :production]
+  initResourceConsumer (0.05 * :production) 0
+  setxy :x :y
+  set production :production
+
+  set size 2
+  set color blue
+  face one-of patches in-radius 1 with [pcolor = roadColor]
+end
+
+to updatePump
+  updateResourceConsumer
+  if time mod hourLength = 0 [
+    hatch-waters 1 [initResource xcor ycor 1000 [production] of myself]
+  ]
+end
+
+
+
 ; Roaming Agents
 
-to initRoamingAgent [x y :speed :reach]
-  setxy x y
+to initRoamingAgent [:x :y :speed :reach]
+  setxy :x :y
   set speed :speed
   set reach :reach
 
   face one-of patches in-radius 1 with [pcolor = roadColor]
+  set size 1
 end
 
 to updateRoamingAgent [:roamingAgentIntersectionBehavior]
@@ -359,60 +667,59 @@ end
 
 ; Offers
 
-to initOffer [x y :reach :nbOpenJobs :group]
-  initRoamingAgent x y offerSpeed :reach
+to initOffer [:x :y :reach :nbOpenJobs]
+  initRoamingAgent :x :y offerSpeed :reach
   set nbOpenJobs :nbOpenJobs
-  ifelse :group = -1 [
-    set group who
-  ][
-    set group :group
-  ]
-
-  set size 1
-  set label nbOpenJobs
-end
-
-to updateOffers
-  updateRoamingAgent [[:intersection] -> (offersIntersectionBehavior :intersection)]
-
-  set label nbOpenJobs
-end
-
-to offersIntersectionBehavior [:intersection]
-  let :patchBehind patch-ahead -1
-  let :directions [directions] of :intersection
-  if (length :directions > 1) or (one-of :directions != :patchBehind) [
-    set :directions remove :patchBehind :directions
-  ]
-  if not empty? :directions [
-    face item 0 :directions
-    set :directions remove-item 0 :directions
-    ask patch-set :directions [ask myself [let :direction myself hatch-offers 1 [face :direction fd speed]]]
-  ]
+  set group who
+  set visitedIntersections []
 end
 
 ; Cars
 
-to initCar [x y :reach :nbPassengers]
-  initRoamingAgent x y carSpeed :reach
+to initCar [:x :y :reach :nbPassengers]
+  initRoamingAgent :x :y carSpeed :reach
   set nbPassengers :nbPassengers
-
-  set size 1
-  set label nbPassengers
 end
 
-to updateCars
-  updateRoamingAgent [[:intersection] -> (carsIntersectionBehavior :intersection)]
-
-  set label nbPassengers
+to updateCar
+  updateRoamingAgent [[:intersection] -> (randomIntersectionBehavior :intersection)]
 end
 
-to carsIntersectionBehavior [:intersection]
+; Resources
+
+to initResource [:x :y :reach :amount]
+  initRoamingAgent :x :y resourceSpeed :reach
+  set amount :amount
+  set group who
+  set visitedIntersections []
+end
+
+to updateResource
+  updateRoamingAgent [[:intersection] -> (cloneIntersectionBehavior :intersection)]
+end
+
+to randomIntersectionBehavior [:intersection]
   let :directions [directions] of :intersection
   set :directions remove patch-ahead -1 :directions
   let :direction one-of :directions
   if :direction != nobody [
     face :direction
+  ]
+end
+
+to cloneIntersectionBehavior [:intersection]
+  let :idIntersection [who] of :intersection
+  ifelse member? :idIntersection visitedIntersections [
+    die
+  ][
+    ask (turtle-set offers electricities waters) with [group = [group] of myself] [set visitedIntersections lput :idIntersection visitedIntersections]
+
+    let :directions [directions] of :intersection
+    if not empty? :directions [
+      face item 0 :directions
+      set :directions remove-item 0 :directions
+      ask patch-set :directions [ask myself [let :direction myself hatch 1 [face :direction fd speed]]]
+    ]
   ]
 end
 @#$#@#$#@
@@ -425,13 +732,13 @@ GRAPHICS-WINDOW
 -1
 14.99
 1
-20
+11
 1
 1
 1
 0
-0
-0
+1
+1
 1
 -33
 33
@@ -444,9 +751,9 @@ ticks
 30.0
 
 BUTTON
-7
+9
 10
-70
+72
 43
 NIL
 reset
@@ -461,27 +768,10 @@ NIL
 1
 
 BUTTON
-76
-10
-139
-43
-NIL
-load
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-11
-72
 82
-105
+10
+153
+43
 NIL
 update
 T
@@ -495,10 +785,10 @@ NIL
 1
 
 BUTTON
-96
-73
-159
-106
+162
+10
+225
+43
 step
 update
 NIL
@@ -510,6 +800,79 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+9
+59
+132
+92
+showLabels
+showLabels
+0
+1
+-1000
+
+SWITCH
+9
+186
+133
+219
+showWater
+showWater
+0
+1
+-1000
+
+SWITCH
+9
+143
+133
+176
+showElectricity
+showElectricity
+0
+1
+-1000
+
+SWITCH
+9
+101
+133
+134
+showOffers
+showOffers
+0
+1
+-1000
+
+PLOT
+8
+396
+208
+546
+Employment
+ticks
+%
+0.0
+100.0
+0.0
+100.0
+false
+false
+"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+PENS
+"default" 1.0 0 -16777216 true "" "plot 100 * (sum [nbEmployed] of houses) / (max list 1 (sum [nbResidents] of houses))"
+
+MONITOR
+359
+10
+429
+67
+Clock
+clock
+4
+1
+14
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -563,6 +926,11 @@ true
 0
 Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
 
+betterlabel
+false
+0
+Rectangle -7500403 true true 0 135 300 300
+
 box
 false
 0
@@ -581,6 +949,24 @@ Circle -7500403 true true 110 127 80
 Circle -7500403 true true 110 75 80
 Line -7500403 true 150 100 80 30
 Line -7500403 true 150 100 220 30
+
+building store
+false
+0
+Rectangle -7500403 true true 30 45 45 240
+Rectangle -16777216 false false 30 45 45 165
+Rectangle -7500403 true true 15 165 285 255
+Rectangle -16777216 true false 120 195 180 255
+Line -7500403 true 150 195 150 255
+Rectangle -16777216 true false 30 180 105 240
+Rectangle -16777216 true false 195 180 270 240
+Line -16777216 false 0 165 300 165
+Polygon -7500403 true true 0 165 45 135 60 90 240 90 255 135 300 165
+Rectangle -7500403 true true 0 0 75 45
+Rectangle -16777216 false false 0 0 75 45
+Polygon -7500403 false true 0 165
+Polygon -16777216 false false 0 165 45 135 60 90 240 90 255 135 300 165 0 165
+Polygon -16777216 false false 15 165 15 255 285 255 285 165
 
 butterfly
 true
@@ -604,6 +990,20 @@ Polygon -16777216 true false 162 80 132 78 134 135 209 135 194 105 189 96 180 89
 Circle -7500403 true true 47 195 58
 Circle -7500403 true true 195 195 58
 
+chess rook
+false
+0
+Rectangle -7500403 true true 90 195 210 240
+Line -16777216 false 75 195 225 195
+Rectangle -16777216 false false 90 195 210 240
+Polygon -7500403 true true 90 195 105 45 195 45 210 195
+Polygon -16777216 false false 90 195 105 45 195 45 210 195
+Rectangle -7500403 true true 75 90 120 60
+Rectangle -7500403 true true 75 24 225 45
+Rectangle -7500403 true true 135 90 165 60
+Rectangle -7500403 true true 180 90 225 60
+Polygon -16777216 false false 90 45 75 45 75 0 120 0 120 24 135 24 135 0 165 0 165 24 179 24 180 0 225 0 225 45
+
 circle
 false
 0
@@ -614,6 +1014,32 @@ false
 0
 Circle -7500403 true true 0 0 300
 Circle -16777216 true false 30 30 240
+
+cloud
+false
+0
+Circle -7500403 true true 13 118 94
+Circle -7500403 true true 86 101 127
+Circle -7500403 true true 51 51 108
+Circle -7500403 true true 118 43 95
+Circle -7500403 true true 158 68 134
+
+container
+false
+0
+Rectangle -7500403 false false 0 75 300 225
+Rectangle -7500403 true true 0 75 300 225
+Line -16777216 false 0 210 300 210
+Line -16777216 false 0 90 300 90
+Line -16777216 false 150 90 150 210
+Line -16777216 false 120 90 120 210
+Line -16777216 false 90 90 90 210
+Line -16777216 false 240 90 240 210
+Line -16777216 false 270 90 270 210
+Line -16777216 false 30 90 30 210
+Line -16777216 false 60 90 60 210
+Line -16777216 false 210 90 210 210
+Line -16777216 false 180 90 180 210
 
 cow
 false
@@ -718,6 +1144,20 @@ Rectangle -16777216 true false 120 210 180 285
 Polygon -7500403 true true 15 120 150 15 285 120
 Line -16777216 false 30 120 270 120
 
+house bungalow
+false
+0
+Rectangle -7500403 true true 210 75 225 255
+Rectangle -7500403 true true 90 135 210 255
+Rectangle -16777216 true false 165 195 195 255
+Line -16777216 false 210 135 210 255
+Rectangle -16777216 true false 105 202 135 240
+Polygon -7500403 true true 225 150 75 150 150 75
+Line -16777216 false 75 150 225 150
+Line -16777216 false 195 120 225 150
+Polygon -16777216 false false 165 195 150 195 180 165 210 195
+Rectangle -16777216 true false 135 105 165 135
+
 house colonial
 false
 0
@@ -734,6 +1174,55 @@ Line -16777216 false 255 105 285 135
 Line -7500403 true 154 195 154 255
 Rectangle -16777216 true false 210 195 255 240
 Rectangle -16777216 true false 135 150 180 180
+Polygon -16777216 false false 30 135 75 90 240 90 270 120 270 75 285 75 285 255 45 255 45 135
+
+house efficiency
+false
+0
+Rectangle -7500403 true true 180 90 195 195
+Rectangle -7500403 true true 90 165 210 255
+Rectangle -16777216 true false 165 195 195 255
+Rectangle -16777216 true false 105 202 135 240
+Polygon -7500403 true true 225 165 75 165 150 90
+Line -16777216 false 75 165 225 165
+Polygon -16777216 false false 90 165 90 255 210 255 210 165
+Polygon -16777216 false false 75 165 150 90 180 120 180 90 195 90 195 135 225 165
+
+house ranch
+false
+0
+Rectangle -7500403 true true 270 120 285 255
+Rectangle -7500403 true true 15 180 270 255
+Polygon -7500403 true true 0 180 300 180 240 135 60 135 0 180
+Rectangle -16777216 true false 120 195 180 255
+Line -7500403 true 150 195 150 255
+Rectangle -16777216 true false 45 195 105 240
+Rectangle -16777216 true false 195 195 255 240
+Line -7500403 true 75 195 75 240
+Line -7500403 true 225 195 225 240
+Line -16777216 false 270 180 270 255
+Line -16777216 false 0 180 300 180
+
+house two story
+false
+0
+Polygon -7500403 true true 2 180 227 180 152 150 32 150
+Rectangle -7500403 true true 270 75 285 255
+Rectangle -7500403 true true 75 135 270 255
+Rectangle -16777216 true false 124 195 187 256
+Rectangle -16777216 true false 210 195 255 240
+Rectangle -16777216 true false 90 150 135 180
+Rectangle -16777216 true false 210 150 255 180
+Line -16777216 false 270 135 270 255
+Rectangle -7500403 true true 15 180 75 255
+Polygon -7500403 true true 60 135 285 135 240 90 105 90
+Line -16777216 false 75 135 75 180
+Rectangle -16777216 true false 30 195 93 240
+Line -16777216 false 60 135 285 135
+Line -16777216 false 255 105 285 135
+Line -16777216 false 0 180 75 180
+Line -7500403 true 60 195 60 240
+Line -7500403 true 154 195 154 255
 
 intersection 0
 false
@@ -777,11 +1266,31 @@ Polygon -7500403 true true 226 135 150 135 141 139 136 147 136 154 141 161 149 1
 Polygon -7500403 true true 150 0 105 75 195 75
 Polygon -7500403 true true 135 74 135 150 139 159 147 164 154 164 161 159 165 151 165 74
 
+invisible
+true
+0
+
 leaf
 false
 0
 Polygon -7500403 true true 150 210 135 195 120 210 60 210 30 195 60 180 60 165 15 135 30 120 15 105 40 104 45 90 60 90 90 105 105 120 120 120 105 60 120 60 135 30 150 15 165 30 180 60 195 60 180 120 195 120 210 105 240 90 255 90 263 104 285 105 270 120 285 135 240 165 240 180 270 195 240 210 180 210 165 195
 Polygon -7500403 true true 135 195 135 240 120 255 105 255 105 285 135 285 165 240 165 195
+
+letter sealed
+false
+0
+Rectangle -7500403 true true 30 90 270 225
+Rectangle -16777216 false false 30 90 270 225
+Line -16777216 false 270 105 150 180
+Line -16777216 false 30 105 150 180
+Line -16777216 false 270 225 181 161
+Line -16777216 false 30 225 119 161
+
+lightning
+false
+0
+Polygon -7500403 true true 120 135 90 195 135 195 105 300 225 165 180 165 210 105 165 105 195 0 75 135
+Polygon -16777216 false false 75 135 195 0 165 105 210 105 180 165 225 165 105 300 135 195 90 195 120 135 75 135
 
 line
 true
@@ -792,6 +1301,16 @@ line half
 true
 0
 Line -7500403 true 150 0 150 150
+
+molecule water
+false
+0
+Circle -1 true false 183 63 84
+Circle -16777216 false false 183 63 84
+Circle -7500403 true true 75 75 150
+Circle -16777216 false false 75 75 150
+Circle -1 true false 33 63 84
+Circle -16777216 false false 33 63 84
 
 pentagon
 false
@@ -806,6 +1325,23 @@ Polygon -7500403 true true 105 90 120 195 90 285 105 300 135 300 150 225 165 300
 Rectangle -7500403 true true 127 79 172 94
 Polygon -7500403 true true 195 90 240 150 225 180 165 105
 Polygon -7500403 true true 105 90 60 150 75 180 135 105
+
+person business
+false
+0
+Rectangle -1 true false 120 90 180 180
+Polygon -13345367 true false 135 90 150 105 135 180 150 195 165 180 150 105 165 90
+Polygon -7500403 true true 120 90 105 90 60 195 90 210 116 154 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 183 153 210 210 240 195 195 90 180 90 150 165
+Circle -7500403 true true 110 5 80
+Rectangle -7500403 true true 127 76 172 91
+Line -16777216 false 172 90 161 94
+Line -16777216 false 128 90 139 94
+Polygon -13345367 true false 195 225 195 300 270 270 270 195
+Rectangle -13791810 true false 180 225 195 300
+Polygon -14835848 true false 180 226 195 226 270 196 255 196
+Polygon -13345367 true false 209 202 209 216 244 202 243 188
+Line -16777216 false 180 90 150 165
+Line -16777216 false 120 90 150 165
 
 plant
 false
@@ -1012,6 +1548,34 @@ Line -7500403 true 62 65 62 103
 Line -7500403 true 115 68 120 100
 Polygon -1 true false 271 127 258 126 257 114 261 109
 Rectangle -16777216 true false 19 131 27 142
+
+warning electricity
+true
+0
+Polygon -7500403 true true 120 135 90 195 135 195 105 300 225 165 180 165 210 105 165 105 195 0 75 135
+Polygon -16777216 false false 75 135 195 0 165 105 210 105 180 165 225 165 105 300 135 195 90 195 120 135 75 135
+
+warning water
+true
+0
+Circle -1 true false 183 63 84
+Circle -16777216 false false 183 63 84
+Circle -7500403 true true 75 75 150
+Circle -16777216 false false 75 75 150
+Circle -1 true false 33 63 84
+Circle -16777216 false false 33 63 84
+
+water tower
+false
+0
+Rectangle -7500403 true true 90 195 210 240
+Polygon -7500403 true true 90 195 105 45 195 45 210 195
+Rectangle -7500403 true true 75 90 120 60
+Rectangle -7500403 true true 45 0 255 30
+Rectangle -7500403 true true 180 90 225 60
+Rectangle -7500403 true true 60 0 240 45
+Rectangle -7500403 true true 75 15 225 60
+Polygon -16777216 false false 45 0 255 0 255 30 240 30 240 45 225 45 225 60 195 60 210 195 210 240 90 240 90 195 105 60 75 60 75 45 60 45 60 30 45 30 45 0
 
 wheel
 false
