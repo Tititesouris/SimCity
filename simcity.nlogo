@@ -623,7 +623,7 @@ end
 
 to updatePump
   updateResourceConsumer
-  if time mod hourLength = 0 [
+  if (time mod hourLength = 0) and electricityStored > 0 [
     hatch-waters 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
   ]
 end
