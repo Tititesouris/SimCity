@@ -1,0 +1,10 @@
+breed [persons person]
+persons-own [
+  residence ; Who of the house this person lives in
+  employer ; Who of the business this person works for. -1 if unemployed
+]
+
+to initPerson [:residence]
+  set residence :residence
+  set employer -1
+end

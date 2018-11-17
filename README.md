@@ -1,2 +1,4 @@
 # SimCity
-Made in NetLogo
+Made in NetLogo  
+  
+Edit config.nls to configure the simulation

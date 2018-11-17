@@ -1,0 +1,97 @@
+breed [houses house]
+houses-own [
+  electricityUsage ; Electricity usage in kWh
+  electricityStored ; Current amount of electricity in the house in kW
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in the house in L
+  residents ; List of people living in the house
+  residentsAtHome ; List of people currently in the house
+]
+
+to loadHouses
+  file-open "houses.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    let :nbResidents file-read
+    create-houses 1 [initHouse :x :y :nbResidents]
+  ]
+  file-close
+end
+
+to initHouse [:x :y :nbResidents]
+  initResourceConsumer (3 + :nbResidents * 2) (:nbResidents * 1.5)
+  setxy :x :y
+  let :residence who
+  hatch-persons :nbResidents [initPerson :residence]
+  set residents persons with [residence = :residence]
+  set residentsAtHome residents
+
+  set size 2
+  set color houseColor
+  face one-of patches in-radius 1 with [pcolor = roadColor]
+end
+
+to updateHouse
+  updateResourceConsumer
+  ifelse timeReleaseOffers <= time and time < timeLeaveHome [
+    findJob
+  ][
+    ifelse time = timeLeaveHome [
+      goWorking
+    ][
+      ifelse timeLeaveWork <= time and time < timeSleep [
+        getHome
+      ][
+        if time = timeSleep [
+          goSleep
+        ]
+      ]
+    ]
+  ]
+end
+
+to findJob
+  let :unemployedResidents residents with [employer = -1]
+  let :nbUnemployed count :unemployedResidents
+  if :nbUnemployed > 0 [
+    let offersAround offers in-radius 1.5
+    ask offersAround [
+      let :nbEmploying (min list nbOpenJobs :nbUnemployed)
+      let :recruiter recruiter
+      ask n-of :nbEmploying :unemployedResidents [set employer :recruiter]
+      acceptOffer :nbEmploying
+    ]
+  ]
+end
+
+to goWorking
+  let :employedResidents residents with [employer != -1]
+  let :nbEmployed count :employedResidents
+  if :nbEmployed > 0 [
+    let :reach timeLeaveWork - time - hourLength ; Can drive until 1h before work closes
+    set residentsAtHome residents with [employer = -1]
+    hatch-cars 1 [initCar xcor ycor :reach :employedResidents]
+  ]
+end
+
+to getHome
+  let :residence who
+  if count residentsAtHome < count residents [
+    let carsAround cars in-radius 1.5
+    ask carsAround [
+      let :droppedOffPassengers passengers with [residence = :residence]
+      let :nbDroppedOff count :droppedOffPassengers
+      ask myself [set residentsAtHome (turtle-set residentsAtHome :droppedOffPassengers)]
+      dropOffPassengers :droppedOffPassengers
+    ]
+  ]
+end
+
+to goSleep
+  set residentsAtHome residents
+end
+
+to-report houseText
+  report (word (count residents with [employer != -1]) "/" (count residentsAtHome) "/" (count residents))
+end

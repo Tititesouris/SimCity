@@ -1,730 +1,73 @@
-; At time A, every business releases offers for every job they have
-; Offers roam around from time A to time B
-; If a house sees an offer, they send out people in cars
-; At time B every roaming offer dies
-; Cars roam around from time A to time C
-; At time C every car still roaming dies
-; At time D, everyone leaves work and gets in a car
-; Cars roam around from time D to time E
-; At time E, every house is filled back up, everyone becomes unemployed and the roaming cars die
+__includes [
+  "globals.nls"
+  "config.nls"
 
-globals [
-  dayLength ; Number of ticks in a day
-  hourLength ; Number of ticks in an hour
-  time ; Current tick of the day
-  timeReleaseOffers ; Number of ticks to wait after a new day starts for businesses to release offers
-  timeLeaveHome ; Number of ticks to wait after a new day starts for people to leave their home to go work
-  timeLeaveWork ; Number of ticks to wait after a new day starts for people to leave work to go home
-  timeSleep ; Number of ticks to wait after a new day starts for people to go to sleep
+  "roads.nls"
+  "intersections.nls"
 
-  warningEmployement ; Warning sign when employement is not satisfying
-  warningWorkforce ; Warning sign when the workforce is not satisfying
-  warningElectricity ; Warning sign when missing electricity
-  warningWater ; Warning sign when missing water
+  "resourceconsumers.nls"
+  "houses.nls"
+  "businesses.nls"
+  "powerplants.nls"
+  "pumps.nls"
 
-  labelColor ; Color of labels
-  roadColor ; Color of the road
-  houseColor ; Base color of a house
+  "roamingagents.nls"
+  "persons.nls"
+  "cars.nls"
+  "offers.nls"
+  "resources.nls"
 
-  offerSpeed ; Speed of offers
-  carSpeed ; Speed of cars
-  resourceSpeed ; Speed of electricity and water
+  "warnings.nls"
+  "betterlabels.nls"
 ]
-
-breed [intersections intersection]
-intersections-own [
-  directions
-]
-
-breed [warnings warning]
-warnings-own [
-  target ; Target the warning is warning about
-  importance ; Number of ticks the warning has been existing
-]
-
-breed [businesses business]
-businesses-own [
-  electricityUsage ; Electricity usage in kWh
-  electricityStored ; Current amount of electricity in the house in kW
-  waterUsage ; Water usage in L/h
-  waterStored ; Current amount of water in the house in L
-  nbJobs ; Total number of jobs available at the business
-  nbEmployees ; Number of employees currently working
-]
-
-breed [houses house]
-houses-own [
-  electricityUsage ; Electricity usage in kWh
-  electricityStored ; Current amount of electricity in the house in kW
-  waterUsage ; Water usage in L/h
-  waterStored ; Current amount of water in the house in L
-  nbResidents ; Total number of people living in the house
-  nbEmployed ; Number of people employed living in the house
-  nbPeople ; Number of people currently in the house
-]
-
-breed [powerplants powerplant]
-powerplants-own [
-  production ; Amount of electricity produced in kWh
-]
-
-breed [pumps pump]
-pumps-own [
-  electricityUsage ; Electricity usage in kWh
-  electricityStored ; Current amount of electricity in the house in kW
-  waterUsage ; Water usage in L/h
-  waterStored ; Current amount of water in the house in L
-  production ; Amount of water produced in L/h
-]
-
-breed [offers offer]
-offers-own [
-  speed ; Movement speed of the offer
-  reach ; Number of ticks the offer is still valid for
-  nbOpenJobs ; Number of employees to recruit
-  group ; ID of the group this offer belongs to
-  visitedIntersections ; Intersections visited by this offer
-]
-
-breed [cars car]
-cars-own [
-  speed ; Movement speed of the car
-  reach ; Number of ticks the car can still drive for
-  nbPassengers ; Number of people in the car
-]
-
-breed [electricities electricity]
-electricities-own [
-  speed ; Movement speed of the electricity
-  reach ; Number of ticks the electricity is still active for
-  amount ; Amount of electricity in kW
-  group ; ID of the group this electricity belongs to
-  visitedIntersections ; Intersections visited by this electricity
-]
-
-breed [waters water]
-waters-own [
-  speed ; Movement speed of the water
-  reach ; Number of ticks the water is still active for
-  amount ; Amount of water in L
-  group ; ID of the group this water belongs to
-  visitedIntersections ; Intersections visited by this water
-]
-
-breed [betterlabels betterlabel]
-
-to-report clock
-  let :hours floor (time / hourLength)
-  let :minutes floor ((time / hourLength - :hours) * 60)
-  report (word :hours "h" :minutes)
-end
-
 
 ; Resets the entire game
 to reset
   ca
   reset-ticks
-
+  set time 0
   load
 end
 
 ; Load game data from files
 to load
-  file-open "settings.txt"
-  set dayLength file-read
-  set timeReleaseOffers file-read
-  set timeLeaveHome file-read
-  set timeLeaveWork file-read
-  set timeSleep file-read
-  set hourLength dayLength / 24
-  set time 0
+  loadConfig
+  ask patches [set pcolor terrainColor]
 
-  set-default-shape businesses file-read
-  set-default-shape houses file-read
-  set-default-shape powerplants file-read
-  set-default-shape pumps file-read
-  set-default-shape cars file-read
-  set-default-shape offers file-read
-  set-default-shape electricities file-read
-  set-default-shape waters file-read
-  set-default-shape betterlabels "betterlabel"
-  set warningEmployement file-read
-  set warningWorkforce file-read
-  set warningElectricity file-read
-  set warningWater file-read
-
-  let :color file-read
-  ask patches [set pcolor :color]
-  set labelColor file-read
-  set roadColor file-read
-  set houseColor file-read
-
-  set offerSpeed file-read
-  set carSpeed file-read
-  set resourceSpeed file-read
-  file-close
-
-  file-open "intersections.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :north (file-read = 1)
-    let :east (file-read = 1)
-    let :south (file-read = 1)
-    let :west (file-read = 1)
-    create-intersections 1 [initIntersection :x :y :north :east :south :west]
-  ]
-  file-close
-
-  file-open "roads.txt"
-  while [not file-at-end?] [
-    let :xA file-read
-    let :yA file-read
-    let :xB file-read
-    let :yB file-read
-    ask patches with [min list :xA :xB <= pxcor and pxcor <= max list :xA :xB and min list :yA :yB <= pycor and pycor <= max list :yA :yB] [set pcolor roadColor]
-  ]
-  file-close
-
-  file-open "businesses.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :nbJobs file-read
-    create-businesses 1 [initBusiness :x :y :nbJobs]
-  ]
-  file-close
-
-  file-open "houses.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :nbResidents file-read
-    create-houses 1 [initHouse :x :y :nbResidents]
-  ]
-  file-close
-
-  file-open "powerplants.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :production file-read
-    create-powerplants 1 [initPowerplant :x :y :production]
-  ]
-  file-close
-
-  file-open "pumps.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :production file-read
-    create-pumps 1 [initPump :x :y :production]
-  ]
-  file-close
-end
-
-to wiggle [:angle :speed]
-  ifelse ticks mod (2 * :angle) >= :angle [
-    set heading heading - :speed
-  ][
-    set heading heading + :speed
-  ]
+  set-current-directory "./config/"
+  loadRoads
+  loadIntersections
+  loadHouses
+  loadBusinesses
+  loadPowerplants
+  loadPumps
+  set-current-directory "./../"
 end
 
 ; Update every tick
 to update
-  ask warnings [updateWarning]
-  ask businesses [updateBusiness]
   ask houses [updateHouse]
+  ask businesses [updateBusiness]
   ask powerplants [updatePowerplant]
   ask pumps [updatePump]
-  ask offers [updateResource]
+
   ask cars [updateCar]
+  ask offers [updateResource]
   ask electricities [updateResource]
   ask waters [updateResource]
-  tick
-  set time time + 1
-  if time > dayLength [
-    set time 0
-  ]
 
-  ask betterlabels [die]
-  if showLabels [
-    ask businesses [
-      let :text (word nbEmployees "/" nbJobs)
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask houses [
-      let :text (word nbEmployed "/" nbResidents)
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask powerplants [
-      let :text production
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask pumps [
-      let :text production
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask offers [
-      let :text nbOpenJobs
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask cars [
-      let :text nbPassengers
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask electricities [
-      let :text amount
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
-    ask waters [
-      let :text amount
-      hatch-betterlabels 1 [initBetterlabel :text]
-    ]
+  ask warnings [updateWarning]
 
-  ]
+  updateBetterlabels
 
   ifelse showOffers [ask offers [st]][ask offers [ht]]
   ifelse showElectricity [ask electricities [st]][ask electricities [ht]]
   ifelse showWater [ask waters [st]][ask waters [ht]]
-end
 
-; Labels
-
-to initBetterlabel [:text]
-  set label :text
-  setxy xcor (ycor - 0.75)
-
-  set size 1.5
-  let :rgb (list (255 - item 0 labelColor) (255 - item 1 labelColor) (255 - item 2 labelColor) 100)
-  set color :rgb
-  set label-color labelColor
-end
-
-
-; Roads
-
-to initIntersection [:x :y :north :east :south :west]
-  setxy :x :y
-  set heading 0
-  set directions []
-  let :nbDirections 0
-  let :direction 0
-  if :north [
-    set directions lput patch-ahead 1 directions
-    set :nbDirections :nbDirections + 1
-    set :direction 0
-  ]
-  if :east [
-    set directions lput patch-right-and-ahead 90 1 directions
-    set :nbDirections :nbDirections + 1
-    set :direction 90
-  ]
-  if :south [
-    set directions lput patch-ahead -1 directions
-    set :nbDirections :nbDirections + 1
-    if not :west [
-      set :direction 180
-    ]
-  ]
-  if :west [
-    set directions lput patch-left-and-ahead 90 1 directions
-    set :nbDirections :nbDirections + 1
-    if not :north [
-      set :direction 270
-    ]
-  ]
-  set shape word "intersection " :nbDirections
-  set color black
-  set heading :direction
-end
-
-; Warnings
-
-to initWarning [:x :y :type :target]
-  setxy :x :y
-  set shape :type
-  set target :target
-  set importance 0
-
-  set size 1.5
-  set label ""
-  set color yellow
-  set heading -40
-end
-
-to updateWarning
-  set importance importance + 1
-  ifelse color = yellow and importance > 6 * hourLength [
-    set color orange
-  ][
-    if color = orange and importance > 12 * hourLength [
-      set color red
-    ]
-  ]
-
-  wiggle 40 0.5
-end
-
-; ResourceConsumer
-
-to initResourceConsumer [:electricityUsage :waterUsage]
-  set electricityUsage :electricityUsage
-  set electricityStored 0
-  set waterUsage :waterUsage
-  set waterStored 0
-end
-
-to updateResourceConsumer
-  if time mod hourLength = 0 [
-    let :warnings warnings with [target = [who] of myself]
-    let :electricityWarnings :warnings with [shape = warningElectricity]
-    let :waterWarnings :warnings with [shape = warningWater]
-
-    let :x xcor - 0.5
-    let :y ycor + 0.75
-    let :target who
-
-    ifelse electricityStored > 0 [
-      set electricityStored electricityStored - electricityUsage
-      ask :electricityWarnings [die]
-    ][
-      if (electricityUsage > 0) and (not any? :electricityWarnings) [
-        hatch-warnings 1 [initWarning :x :y warningElectricity :target]
-        set :x :x + 0.5
-      ]
-    ]
-
-    ifelse waterStored > 0 [
-      set waterStored waterStored - waterUsage
-      ask :waterWarnings [die]
-    ][
-      if (waterUsage > 0) and (not any? :waterWarnings) [
-        hatch-warnings 1 [initWarning :x :y warningWater :target]
-      ]
-    ]
-  ]
-
-  let electricityStorage electricityUsage * 2
-  if electricityStored < electricityStorage [
-    let electricitiesAround electricities in-radius 1.5
-    ask electricitiesAround [
-      let :needed [electricityStorage - electricityStored] of myself
-      ifelse amount <= :needed [
-        ask myself [set electricityStored electricityStored + [amount] of myself]
-        ask electricities with [group = [group] of myself] [die]
-      ][
-        ask myself [set electricityStored electricityStorage]
-        ask electricities with [group = [group] of myself] [set amount amount - :needed]
-      ]
-    ]
-  ]
-
-  let waterStorage waterUsage * 2
-  if waterStored < waterUsage [
-    let watersAround waters in-radius 1.5
-    ask watersAround [
-      let :needed [waterStorage - waterStored] of myself
-      ifelse amount <= :needed [
-        ask myself [set waterStored waterStored + [amount] of myself]
-        ask waters with [group = [group] of myself] [die]
-      ][
-        ask myself [set waterStored waterStorage]
-        ask waters with [group = [group] of myself] [set amount amount - :needed]
-      ]
-    ]
-  ]
-
-end
-
-
-; Businesses
-
-to initBusiness [:x :y :nbJobs]
-  initResourceConsumer (5 + :nbJobs * 1.5) (:nbJobs * 0.5)
-  setxy :x :y
-  set nbJobs :nbJobs
-  set nbEmployees 0
-
-  set size 2
-  set color white
-  face one-of patches in-radius 1 with [pcolor = roadColor]
-end
-
-to updateBusiness
-  updateResourceConsumer
-  let :nbOpenJobs nbJobs - nbEmployees
-  ; Working hours
-  ifelse timeReleaseOffers < time and time < timeLeaveWork [
-    welcomeEmployees
-  ][
-    ifelse time = timeReleaseOffers [
-      startWorkday
-    ][
-      if time = timeLeaveWork [
-        endWorkday
-      ]
-    ]
-  ]
-end
-
-to welcomeEmployees
-  if nbJobs - nbEmployees > 0 [
-    let carsAround cars in-radius 1.5
-    ask carsAround [
-      let :nbOpenJobs [nbJobs - nbEmployees] of myself
-      ifelse nbPassengers <= :nbOpenJobs [
-        ask myself [set nbEmployees nbEmployees + [nbPassengers] of myself]
-        die
-      ][
-        ask myself [set nbEmployees nbJobs]
-        set nbPassengers nbPassengers - :nbOpenJobs
-      ]
-    ]
-  ]
-end
-
-to startWorkday
-  if nbJobs > 0 [
-    let :reach timeLeaveHome - timeReleaseOffers
-    hatch-offers 1 [initOffer xcor ycor :reach [nbJobs] of myself]
-  ]
-end
-
-to endWorkday
-  if nbEmployees > 0 [
-    let :nbCars random nbEmployees + 1
-    let :nbPassengers floor (nbEmployees / :nbCars)
-    let :nbPassengersLeft nbEmployees mod :nbCars
-
-    let :reach timeSleep - timeLeaveWork
-    hatch-cars :nbCars [initCar xcor ycor :reach :nbPassengers]
-    if :nbPassengersLeft > 0 [
-      hatch-cars 1 [initCar xcor ycor :reach :nbPassengersLeft]
-    ]
-    set nbEmployees 0
-  ]
-end
-
-
-; Houses
-
-to initHouse [:x :y :nbResidents]
-  initResourceConsumer (3 + :nbResidents * 2) (:nbResidents * 1.5)
-  setxy :x :y
-  set nbResidents :nbResidents
-  set nbPeople nbResidents
-  set nbEmployed 0
-
-  set size 2
-  set color houseColor
-  face one-of patches in-radius 1 with [pcolor = roadColor]
-end
-
-to updateHouse
-  updateResourceConsumer
-  ifelse timeReleaseOffers <= time and time < timeLeaveHome [
-    findJob
-  ][
-    ifelse time = timeLeaveHome [
-      goWorking
-    ][
-      ifelse timeLeaveWork <= time and time < timeSleep [
-        getHome
-      ][
-        if time = timeSleep [
-          goSleep
-        ]
-      ]
-    ]
-  ]
-end
-
-to findJob
-  if nbEmployed < nbPeople [
-    let offersAround offers in-radius 1.5
-    ask offersAround [
-      let :nbUnemployed [nbPeople - nbEmployed] of myself
-      ifelse nbOpenJobs <= :nbUnemployed [
-        ask myself [getHired [nbOpenJobs] of myself]
-        ask offers with [group = [group] of myself] [die]
-      ][
-        ask offers with [group = [group] of myself] [set nbOpenJobs nbOpenJobs - :nbUnemployed]
-        ask myself [getHired :nbUnemployed]
-      ]
-    ]
-  ]
-end
-
-to getHired [:nbJobs]
-  set nbEmployed nbEmployed + :nbJobs
-end
-
-to goWorking
-  if nbEmployed > 0 [
-    let :reach timeLeaveWork - time - hourLength ; Can drive until 1h before work closes
-    set nbPeople nbResidents - nbEmployed
-    hatch-cars 1 [initCar xcor ycor :reach [nbEmployed] of myself]
-  ]
-end
-
-to getHome
-  if nbPeople < nbResidents [
-    let carsAround cars in-radius 1.5
-    ask carsAround [
-      let :nbMissing [nbResidents - nbPeople] of myself
-      ifelse nbPassengers <= :nbMissing [
-        ask myself [set nbPeople nbPeople + [nbPassengers] of myself]
-        die
-      ][
-        ask myself [set nbPeople nbResidents]
-        set nbPassengers nbPassengers - :nbMissing
-      ]
-    ]
-  ]
-end
-
-to goSleep
-  set nbPeople nbResidents
-  set nbEmployed 0
-end
-
-
-; Powerplants
-
-to initPowerplant [:x :y :production]
-  setxy :x :y
-  set production :production
-
-  set size 2
-  set color yellow
-  face one-of patches in-radius 1 with [pcolor = roadColor]
-end
-
-to updatePowerplant
-  if time mod hourLength = 0 [
-    hatch-electricities 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
-  ]
-end
-
-
-; Pumps
-
-to initPump [:x :y :production]
-  initResourceConsumer (0.05 * :production) 0
-  setxy :x :y
-  set production :production
-
-  set size 2
-  set color blue
-  face one-of patches in-radius 1 with [pcolor = roadColor]
-end
-
-to updatePump
-  updateResourceConsumer
-  if (time mod hourLength = 0) and electricityStored > 0 [
-    hatch-waters 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
-  ]
-end
-
-
-
-; Roaming Agents
-
-to initRoamingAgent [:x :y :speed :reach]
-  setxy :x :y
-  set speed :speed
-  set reach :reach
-
-  face one-of patches in-radius 1 with [pcolor = roadColor]
-  set size 1
-end
-
-to updateRoamingAgent [:roamingAgentIntersectionBehavior]
-  ifelse reach > 0 [
-    fd speed
-    set reach reach - 1
-    if distance patch-here < (speed / 2) [
-      move-to patch-here
-
-      let :intersection one-of intersections-on patch-here
-      ifelse :intersection != nobody [
-        (run :roamingAgentIntersectionBehavior :intersection)
-      ][
-        let :patchAhead patch-ahead 1
-        if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
-          let :directions []
-          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor]]
-          face one-of :directions
-        ]
-      ]
-    ]
-  ][
-    die
-  ]
-end
-
-; Offers
-
-to initOffer [:x :y :reach :nbOpenJobs]
-  initRoamingAgent :x :y offerSpeed :reach
-  set nbOpenJobs :nbOpenJobs
-  set group who
-  set visitedIntersections []
-end
-
-; Cars
-
-to initCar [:x :y :reach :nbPassengers]
-  initRoamingAgent :x :y carSpeed :reach
-  set nbPassengers :nbPassengers
-end
-
-to updateCar
-  updateRoamingAgent [[:intersection] -> (randomIntersectionBehavior :intersection)]
-end
-
-; Resources
-
-to initResource [:x :y :reach :amount]
-  initRoamingAgent :x :y resourceSpeed :reach
-  set amount :amount
-  set group who
-  set visitedIntersections []
-end
-
-to updateResource
-  updateRoamingAgent [[:intersection] -> (cloneIntersectionBehavior :intersection)]
-end
-
-to randomIntersectionBehavior [:intersection]
-  let :directions [directions] of :intersection
-  set :directions remove patch-ahead -1 :directions
-  let :direction one-of :directions
-  if :direction != nobody [
-    face :direction
-  ]
-end
-
-to cloneIntersectionBehavior [:intersection]
-  let :idIntersection [who] of :intersection
-  let :resources (turtle-set offers electricities waters) with [group = [group] of myself]
-  ifelse member? :idIntersection visitedIntersections [
-    ifelse count :resources > 1 [
-      die
-    ][
-      set visitedIntersections []
-    ]
-  ][
-    ask :resources [set visitedIntersections lput :idIntersection visitedIntersections]
-
-    let :directions [directions] of :intersection
-    if not empty? :directions [
-      face item 0 :directions
-      set :directions remove-item 0 :directions
-      ask patch-set :directions [ask myself [let :direction myself hatch 1 [face :direction fd speed]]]
-    ]
+  tick
+  set time time + 1
+  if time >= dayLength [
+    set time 0
   ]
 end
 @#$#@#$#@
@@ -824,7 +167,7 @@ SWITCH
 219
 showWater
 showWater
-0
+1
 1
 -1000
 
@@ -866,7 +209,7 @@ false
 false
 "" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
 PENS
-"default" 1.0 0 -16777216 true "" "plot 100 * (sum [nbEmployed] of houses) / (max list 1 (sum [nbResidents] of houses))"
+"default" 1.0 0 -16777216 true "" "plot 100 * (sum [count residents with [employer != -1]] of houses) / (max (list 1 (sum [count residents] of houses)))"
 
 MONITOR
 359

@@ -1,0 +1,94 @@
+breed [businesses business]
+businesses-own [
+  electricityUsage ; Electricity usage in kWh
+  electricityStored ; Current amount of electricity in the house in kW
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in the house in L
+  nbJobs ; Total number of jobs available at the business
+  employees ; List of all employees working in this business
+  employeesAtWork ; List of employees currently working
+]
+
+to loadBusinesses
+  file-open "businesses.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    let :nbJobs file-read
+    create-businesses 1 [initBusiness :x :y :nbJobs]
+  ]
+  file-close
+end
+
+
+to initBusiness [:x :y :nbJobs]
+  initResourceConsumer (5 + :nbJobs * 1.5) (:nbJobs * 0.5)
+  setxy :x :y
+  set nbJobs :nbJobs
+  set employees no-turtles
+  set employeesAtWork no-turtles
+
+  set size 2
+  set color white
+  face one-of patches in-radius 1 with [pcolor = roadColor]
+end
+
+to updateBusiness
+  updateResourceConsumer
+  
+  ; Working hours
+  ifelse timeReleaseOffers < time and time < timeLeaveWork [
+    welcomeEmployees
+  ][
+    ifelse time = timeReleaseOffers [
+      startWorkday
+    ][
+      if time = timeLeaveWork [
+        endWorkday
+      ]
+    ]
+  ]
+end
+
+to startWorkday
+  let :recruiter who
+  let :nbOpenJobs nbJobs - (count employees)
+  if :nbOpenJobs > 0 [
+    let :reach timeLeaveHome - timeReleaseOffers
+    hatch-offers 1 [initOffer xcor ycor :reach :recruiter :nbOpenJobs]
+  ]
+end
+
+to welcomeEmployees
+  let :employer who
+  let :nbEmployees count employees
+  
+  if count employeesAtWork < nbJobs [
+    let carsAround cars in-radius 1.5
+    ask carsAround [
+      let :employeesInCar passengers with [employer = :employer]
+      ask myself [set employees (turtle-set employees :employeesInCar)]
+      ask myself [set employeesAtWork (turtle-set employeesAtWork :employeesInCar)]
+      dropOffPassengers :employeesInCar
+    ]
+  ]
+end
+
+to endWorkday
+  let :nbEmployeesWorking count employeesAtWork
+  if :nbEmployeesWorking > 0 [
+    let :reach timeSleep - timeLeaveWork
+    
+    while [count employeesAtWork > 0]
+    [
+      let :nbPassengers min (list 4 (random (count employeesAtWork) + 1))
+      let :passengers n-of :nbPassengers employeesAtWork
+      set employeesAtWork employeesAtWork with [not member? self :passengers]
+      hatch-cars 1 [initCar xcor ycor :reach :passengers]
+    ]
+  ]
+end
+
+to-report businessText
+  report (word (count employeesAtWork) "/" (count employees) "/" nbJobs)
+end

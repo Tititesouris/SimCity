@@ -1,0 +1,36 @@
+to loadConfig
+  ; Times
+  set dayLength 2400 ; Number of ticks in a day
+  set hourLength dayLength / 24 ; Number of ticks in an hour
+  
+  set timeReleaseOffers 100 ; Job offers release
+  set timeLeaveHome 700 ; Going to work
+  set timeLeaveWork 1800 ; Going home
+  set timeSleep 2300 ; Going to sleep
+
+  ; Speeds
+  set offerSpeed 0.5 ; Offers
+  set carSpeed 0.5 ; Cars
+  set resourceSpeed 0.75 ; Resources
+  
+  ; Colors
+  set terrainColor [160 220 90] ; Terrain
+  set labelColor [0 0 0 200] ; Labels
+  set roadColor [100 100 105] ; Road
+  set houseColor [255 255 150] ; Houses
+
+  ; Shapes
+  set-default-shape businesses "house colonial" ; Businesses
+  set-default-shape houses "house efficiency" ; Houses
+  set-default-shape powerplants "building store" ; Powerplants
+  set-default-shape pumps "water tower" ; Pumps
+  set-default-shape cars "car" ; Cars
+  set-default-shape offers "letter sealed" ; Offers
+  set-default-shape electricities "lightning" ; Electricity
+  set-default-shape waters "molecule water" ; Water
+  
+  set warningEmployement "letter sealed" ; Warning employement
+  set warningWorkforce "person business" ; Warning workforce
+  set warningElectricity "warning electricity" ; Warning electricity
+  set warningWater "warning water" ; Warning water
+end

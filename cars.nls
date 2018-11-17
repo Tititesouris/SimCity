@@ -1,0 +1,26 @@
+breed [cars car]
+cars-own [
+  speed ; Movement speed of the car
+  reach ; Number of ticks the car can still drive for
+  passengers ; List of persons in the car
+]
+
+to initCar [:x :y :reach :passengers]
+  initRoamingAgent :x :y carSpeed :reach
+  set passengers :passengers
+end
+
+to updateCar
+  updateRoamingAgent [[:intersection] -> (randomIntersectionBehavior :intersection)]
+end
+
+to dropOffPassengers [:droppedOffPassengers]
+  set passengers passengers with [not member? self :droppedOffPassengers]
+  if count passengers <= 0 [
+    die
+  ]
+end
+
+to-report carText
+	report count passengers
+end

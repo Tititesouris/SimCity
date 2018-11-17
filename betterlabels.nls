@@ -1,0 +1,50 @@
+breed [betterlabels betterlabel]
+
+to initBetterlabel [:text]
+  set label :text
+  setxy xcor (ycor - 0.75)
+
+  set size 1.5
+  let :rgb (list (255 - item 0 labelColor) (255 - item 1 labelColor) (255 - item 2 labelColor) 100)
+  set color :rgb
+  set shape "betterlabel"
+  set label-color labelColor
+end
+
+to updateBetterlabels
+  ask betterlabels [die]
+  if showLabels [
+    ask houses [
+      let :text houseText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask businesses [
+      let :text businessText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask powerplants [
+      let :text powerplantText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask pumps [
+      let :text pumpText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask offers [
+      let :text offerText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask cars [
+      let :text carText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask electricities [
+      let :text resourceText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+    ask waters [
+      let :text resourceText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
+  ]
+end

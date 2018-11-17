@@ -1,0 +1,29 @@
+breed [offers offer]
+offers-own [
+  speed ; Movement speed of the offer
+  reach ; Number of ticks the offer is still valid for
+  recruiter ; Who of the business that sent this offer
+  nbOpenJobs ; Number of employees to recruit
+  group ; ID of the group this offer belongs to
+  visitedIntersections ; Intersections visited by this offer
+]
+
+to initOffer [:x :y :reach :recruiter :nbOpenJobs]
+  initRoamingAgent :x :y offerSpeed :reach
+  set recruiter :recruiter
+  set nbOpenJobs :nbOpenJobs
+  set group who
+  set visitedIntersections []
+end
+
+to acceptOffer [:nbEmploying]
+  ask offers with [group = [group] of myself] [set nbOpenJobs nbOpenJobs - :nbEmploying]
+  if nbOpenJobs <= 0 [
+    let :group group
+    ask offers with [group = :group] [die]
+  ]
+end
+
+to-report offerText
+  report nbOpenJobs
+end

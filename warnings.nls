@@ -1,0 +1,30 @@
+breed [warnings warning]
+warnings-own [
+  target ; Target the warning is warning about
+  importance ; Number of ticks the warning has been existing
+]
+
+to initWarning [:x :y :type :target]
+  setxy :x :y
+  set shape :type
+  set target :target
+  set importance 0
+
+  set size 1.5
+  set label ""
+  set color yellow
+  set heading -40
+end
+
+to updateWarning
+  set importance importance + 1
+  ifelse color = yellow and importance > 6 * hourLength [
+    set color orange
+  ][
+    if color = orange and importance > 12 * hourLength [
+      set color red
+    ]
+  ]
+
+  wiggle 40 0.5
+end

@@ -1,0 +1,69 @@
+to initResourceConsumer [:electricityUsage :waterUsage]
+  set electricityUsage :electricityUsage
+  set electricityStored 0
+  set waterUsage :waterUsage
+  set waterStored 0
+end
+
+to updateResourceConsumer
+  if time mod hourLength = 0 [
+    let :target who
+    let :warnings warnings with [target = :target]
+    let :electricityWarnings :warnings with [shape = warningElectricity]
+    let :waterWarnings :warnings with [shape = warningWater]
+
+    let :x xcor - 0.5
+    let :y ycor + 0.75
+    set label electricityStored
+    set label-color black
+
+    ifelse electricityStored > 0 [
+      set electricityStored electricityStored - electricityUsage
+      ask :electricityWarnings [die]
+    ][
+      if (electricityUsage > 0) and (not any? :electricityWarnings) [
+        hatch-warnings 1 [initWarning :x :y warningElectricity :target]
+        set :x :x + 0.5
+      ]
+    ]
+
+    ifelse waterStored > 0 [
+      set waterStored waterStored - waterUsage
+      ask :waterWarnings [die]
+    ][
+      if (waterUsage > 0) and (not any? :waterWarnings) [
+        hatch-warnings 1 [initWarning :x :y warningWater :target]
+      ]
+    ]
+  ]
+
+  let electricityStorage electricityUsage * 2
+  if electricityStored < electricityStorage [
+    let electricitiesAround electricities in-radius 1.5
+    ask electricitiesAround [
+      let :needed [electricityStorage - electricityStored] of myself
+      ifelse amount <= :needed [
+        ask myself [set electricityStored electricityStored + [amount] of myself]
+        ask electricities with [group = [group] of myself] [die]
+      ][
+        ask myself [set electricityStored electricityStorage]
+        ask electricities with [group = [group] of myself] [set amount amount - :needed]
+      ]
+    ]
+  ]
+
+  let waterStorage waterUsage * 2
+  if waterStored < waterUsage [
+    let watersAround waters in-radius 1.5
+    ask watersAround [
+      let :needed [waterStorage - waterStored] of myself
+      ifelse amount <= :needed [
+        ask myself [set waterStored waterStored + [amount] of myself]
+        ask waters with [group = [group] of myself] [die]
+      ][
+        ask myself [set waterStored waterStorage]
+        ask waters with [group = [group] of myself] [set amount amount - :needed]
+      ]
+    ]
+  ]
+end

@@ -1,0 +1,37 @@
+globals [
+  dayLength ; Number of ticks in a day
+  hourLength ; Number of ticks in an hour
+  time ; Current tick of the day
+  timeReleaseOffers ; Number of ticks to wait after a new day starts for businesses to release offers
+  timeLeaveHome ; Number of ticks to wait after a new day starts for people to leave their home to go work
+  timeLeaveWork ; Number of ticks to wait after a new day starts for people to leave work to go home
+  timeSleep ; Number of ticks to wait after a new day starts for people to go to sleep
+
+  warningEmployement ; Warning sign when employement is not satisfying
+  warningWorkforce ; Warning sign when the workforce is not satisfying
+  warningElectricity ; Warning sign when missing electricity
+  warningWater ; Warning sign when missing water
+
+  terrainColor ; Color of the terrain
+  labelColor ; Color of labels
+  roadColor ; Color of the road
+  houseColor ; Base color of a house
+
+  offerSpeed ; Speed of offers
+  carSpeed ; Speed of cars
+  resourceSpeed ; Speed of electricity and water
+]
+
+to-report clock
+  let :hours floor (time / hourLength)
+  let :minutes floor ((time / hourLength - :hours) * 60)
+  report (word :hours "h" :minutes)
+end
+
+to wiggle [:angle :speed]
+  ifelse ticks mod (2 * :angle) >= :angle [
+    set heading heading - :speed
+  ][
+    set heading heading + :speed
+  ]
+end
