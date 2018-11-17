@@ -14,8 +14,6 @@ to updateResourceConsumer
 
     let :x xcor - 0.5
     let :y ycor + 0.75
-    set label electricityStored
-    set label-color black
 
     ifelse electricityStored > 0 [
       set electricityStored electricityStored - electricityUsage
