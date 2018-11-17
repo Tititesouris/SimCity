@@ -13,6 +13,7 @@ globals [
   warningWater ; Warning sign when missing water
 
   terrainColor ; Color of the terrain
+  highwayColor ; Color of the highway
   labelColor ; Color of labels
   roadColor ; Color of the road
   houseColor ; Base color of a house
@@ -20,6 +21,8 @@ globals [
   offerSpeed ; Speed of offers
   carSpeed ; Speed of cars
   resourceSpeed ; Speed of electricity and water
+  
+  gui-ready? ; Whether or not the UI has been setup correctly
 ]
 
 to-report clock
@@ -36,7 +39,7 @@ end
 
 to-report calendar
   let :years floor (ticks / (12 * 4 * 7 * dayLength))
-  let :year 1970 + :years
+  let :year 2000 + :years
   
   let :months (floor (ticks / (4 * 7 * dayLength))) mod 12
   let :month item :months ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"]

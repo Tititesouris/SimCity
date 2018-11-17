@@ -14,7 +14,7 @@ to updateCar
   updateRoamingAgent [[:intersection] -> (randomIntersectionBehavior :intersection)]
 end
 
-to dropOffPassengers [:droppedOffPassengers]
+to carDropOff [:droppedOffPassengers]
   set passengers passengers with [not member? self :droppedOffPassengers]
   if count passengers <= 0 [
     die

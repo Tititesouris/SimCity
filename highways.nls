@@ -1,0 +1,36 @@
+breed [highways highway]
+highways-own [
+  
+]
+
+to loadHighways
+  file-open "highways.txt"
+  while [not file-at-end?] [
+    let :xA file-read
+    let :yA file-read
+    let :xB file-read
+    let :yB file-read
+    ask patches with [min list :xA :xB <= pxcor and pxcor <= max list :xA :xB and min list :yA :yB <= pycor and pycor <= max list :yA :yB] [set pcolor highwayColor]
+    create-highways 1 [initHighway :xA :yA]
+    create-highways 1 [initHighway :xB :yB]
+  ]
+  file-close
+end
+
+to initHighway [:x :y]
+  setxy :x :y
+  
+  set color white
+  face one-of other patches in-radius 1 with [pcolor = highwayColor]
+end
+
+to updateHighway
+  let :dailyProbability 2
+  if random ((1 / :dailyProbability) * dayLength) = 0 [
+    let :nbPassengers (random 4) + 1
+    hatch-persons :nbPassengers [initPerson myself]
+    let :passengers persons with [residence = myself]
+    ask :passengers [set residence -1]
+    hatch-movingtrucks 1 [initMovingtruck xcor ycor dayLength :passengers]
+  ]
+end

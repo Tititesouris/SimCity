@@ -1,0 +1,6 @@
+breed [planners planner]
+
+to initPlanners
+  set shape "square 2"
+  set color green
+end

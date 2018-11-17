@@ -2,6 +2,13 @@ __includes [
   "globals.nls"
   "config.nls"
 
+  "movingtrucks.nls"
+  "highways.nls"
+
+  "planners.nls"
+  "guielements.nls"
+  "cursors.nls"
+
   "roads.nls"
   "intersections.nls"
 
@@ -21,6 +28,26 @@ __includes [
   "betterlabels.nls"
 ]
 
+; When NetLogo opens
+to startup
+  initGUI
+  reset
+end
+
+to initGUI
+  ask cursors [die]
+  create-cursors 1 [initCursor]
+  set gui-ready? true
+end
+
+to updateGUI
+  if gui-ready? = 0 [ ; For some reason the init doesn't work on startup
+    initGUI
+  ]
+  ask cursors [updateCursor]
+  display
+end
+
 ; Resets the entire game
 to reset
   ca
@@ -33,8 +60,15 @@ end
 to load
   loadConfig
   ask patches [set pcolor terrainColor]
-
   set-current-directory "./config/"
+  loadGuielements
+  loadHighways
+  set-current-directory "./../"
+end
+
+; Load save data from files
+to loadSave
+  set-current-directory "./save/"
   loadRoads
   loadIntersections
   loadHouses
@@ -46,10 +80,14 @@ end
 
 ; Update every tick
 to update
+
   ask houses [updateHouse]
   ask businesses [updateBusiness]
   ask powerplants [updatePowerplant]
   ask pumps [updatePump]
+
+  ask highways [updateHighway]
+  ask movingtrucks [updateMovingtruck]
 
   ask cars [updateCar]
   ask offers [updateResource]
@@ -99,10 +137,10 @@ ticks
 30.0
 
 BUTTON
-9
-10
-72
-43
+1
+76
+64
+109
 NIL
 reset
 NIL
@@ -116,11 +154,11 @@ NIL
 1
 
 BUTTON
-82
+95
 10
-153
+184
 43
-NIL
+Play / Pause
 update
 T
 1
@@ -133,10 +171,10 @@ NIL
 1
 
 BUTTON
-162
-10
-225
-43
+71
+77
+134
+110
 step
 update
 NIL
@@ -150,10 +188,10 @@ NIL
 1
 
 SWITCH
-9
-59
-132
-92
+2
+224
+125
+257
 showLabels
 showLabels
 0
@@ -161,10 +199,10 @@ showLabels
 -1000
 
 SWITCH
-9
-186
-133
-219
+2
+351
+126
+384
 showWater
 showWater
 1
@@ -172,10 +210,10 @@ showWater
 -1000
 
 SWITCH
-9
-143
-133
-176
+2
+308
+126
+341
 showElectricity
 showElectricity
 1
@@ -183,10 +221,10 @@ showElectricity
 -1000
 
 SWITCH
-9
-101
-133
-134
+2
+266
+126
+299
 showOffers
 showOffers
 0
@@ -212,10 +250,10 @@ PENS
 "employement" 1.0 0 -13840069 true "" "plot 100 * (sum [count residents with [employer != -1]] of houses) / (max (list 1 (sum [count residents] of houses)))"
 
 MONITOR
-295
-12
-427
-69
+369
+10
+434
+67
 Clock
 clock
 4
@@ -264,15 +302,66 @@ PENS
 "water usage" 1.0 0 -14730904 true "" "plot sum [waterUsage] of (turtle-set houses businesses)"
 
 MONITOR
-197
-108
-417
-165
+207
+10
+368
+67
 Calendar
 calendar
 17
 1
 14
+
+BUTTON
+2
+10
+89
+43
+Update GUI
+updateGUI
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+358
+77
+430
+110
+NIL
+startup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+218
+74
+353
+107
+Reset & Load save
+reset\nloadSave
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -564,6 +653,53 @@ Circle -7500403 true true 96 51 108
 Circle -16777216 true false 113 68 74
 Polygon -10899396 true false 189 233 219 188 249 173 279 188 234 218
 Polygon -10899396 true false 180 255 150 210 105 210 75 240 135 240
+
+gui business
+true
+0
+Rectangle -7500403 true true 255 60 270 240
+Rectangle -7500403 true true 30 120 255 240
+Rectangle -16777216 true false 109 180 172 241
+Rectangle -16777216 true false 45 180 90 225
+Rectangle -16777216 true false 45 135 90 165
+Rectangle -16777216 true false 195 135 240 165
+Line -16777216 false 255 120 255 240
+Polygon -7500403 true true 15 120 270 120 225 75 60 75
+Line -16777216 false 15 120 270 120
+Line -16777216 false 240 90 270 120
+Line -7500403 true 139 180 139 240
+Rectangle -16777216 true false 195 180 240 225
+Rectangle -16777216 true false 120 135 165 165
+Polygon -16777216 false false 15 120 60 75 225 75 255 105 255 60 270 60 270 240 30 240 30 120
+Circle -7500403 false true 0 0 300
+
+gui cursor
+true
+0
+Polygon -7500403 true true 150 5 40 250 150 205 260 250
+Circle -7500403 false true 0 0 298
+
+gui house
+true
+0
+Rectangle -7500403 true true 45 120 255 285
+Rectangle -16777216 true false 120 210 180 285
+Polygon -7500403 true true 15 120 150 15 285 120
+Line -16777216 false 30 120 270 120
+Circle -7500403 false true 2 2 295
+
+gui road
+true
+0
+Circle -7500403 true true 3 3 294
+Circle -16777216 true false 30 30 240
+Line -7500403 true 150 285 150 15
+Line -7500403 true 15 150 285 150
+Circle -7500403 true true 120 120 60
+Line -7500403 true 216 40 79 269
+Line -7500403 true 40 84 269 221
+Line -7500403 true 40 216 269 79
+Line -7500403 true 84 40 221 269
 
 house
 false

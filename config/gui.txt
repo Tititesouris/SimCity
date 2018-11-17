@@ -1,0 +1,4 @@
+32 19 3 "gui business"
+29 19 2 "gui house"
+26 19 1 "gui road"
+23 19 0 "gui cursor"

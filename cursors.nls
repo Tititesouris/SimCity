@@ -1,0 +1,214 @@
+breed [cursors cursor]
+cursors-own [
+  mouse-was-down? ; Whether or not the mouse was down during the previous tick
+  mouse-click-down? ; True only during the tick when the mouse button is pressed
+  mouse-click-up? ; True only during the tick when the mouse button is released
+  correctColor ; Color of the cursor when it can interact
+  incorrectColor ; Color of the cursor when it cannot interact
+  tools ; Tools available
+  activeTool ; Tool currently selected
+  selectedPatch ; Patch selected. Different uses based on the active tool
+]
+
+to initCursor
+  set mouse-was-down? false
+  set correctColor green
+  set incorrectColor red
+  let :noneTool (list [[] -> cursorNoneClickDown] [[] -> cursorNoneClickUp] [[] -> cursorNoneDown] [[] -> cursorNoneUp])
+  let :roadTool (list [[] -> cursorRoadClickDown] [[] -> cursorRoadClickUp] [[] -> cursorRoadDown] [[] -> cursorRoadUp])
+  let :houseTool (list [[] -> cursorHouseClickDown] [[] -> cursorHouseClickUp] [[] -> cursorHouseDown] [[] -> cursorHouseUp])
+  let :businessTool (list [[] -> cursorBusinessClickDown] [[] -> cursorBusinessClickUp] [[] -> cursorBusinessDown] [[] -> cursorBusinessUp])
+  set tools (list :noneTool :roadTool :houseTool :businessTool)
+  set activeTool 0
+  set selectedPatch nobody
+  
+  set size 0.5
+  set shape "gui cursor"
+  set color incorrectColor
+  set heading 0
+end
+
+to updateCursor
+  setxy mouse-xcor mouse-ycor
+  set mouse-click-down? mouse-down? and (not mouse-was-down?)
+  set mouse-click-up? (not mouse-down?) and mouse-was-down?
+  
+  let :guiElements guielements in-radius 1
+  ifelse any? :guiElements [
+    if mouse-click-down? [
+      ask :guiElements [
+        ask other guielements [set color gray]
+        set color blue
+        ask myself [
+          set activeTool [tool] of myself
+          set shape [shape] of myself
+        ]
+      ]
+    ]
+  ][
+    updateCursorEvents
+  ]
+  
+  set mouse-was-down? mouse-down?
+end
+
+to updateCursorEvents
+  let :event [[:x :y] -> ]
+  ifelse mouse-click-down? [
+    set :event item 0 (item activeTool tools)
+  ][
+    ifelse mouse-click-up? [
+      set :event item 1 (item activeTool tools)
+    ][
+      ifelse mouse-down? [
+        set :event item 2 (item activeTool tools)
+      ][
+        set :event item 3 (item activeTool tools)
+      ]
+    ]
+  ]
+  (run :event xcor ycor)
+end
+
+to cursorNoneClickDown
+end
+to cursorNoneClickUp
+end
+to cursorNoneDown
+end
+to cursorNoneUp
+  set color correctColor
+end
+
+to cursorRoadClickDown
+  if color = correctColor [
+    set selectedPatch patch-here
+  ]
+end
+
+to cursorRoadClickUp
+  if selectedPatch != nobody [
+    ask planners [
+      ask patch-here [
+        ask intersections-here [die]
+        if pcolor != highwayColor [
+          set pcolor roadColor
+        ]
+        
+        let :roadPatches patches with [(pcolor = roadColor or pcolor = highwayColor) and not any? planners-here] in-radius 1
+        if any? :roadPatches [
+          let :north (any? planners-at 0 1) or (member? (patch-at 0 1) :roadPatches)
+          let :east (any? planners-at 1 0) or (member? (patch-at 1 0) :roadPatches)
+          let :south (any? planners-at 0 -1) or (member? (patch-at 0 -1) :roadPatches)
+          let :west (any? planners-at -1 0) or (member? (patch-at -1 0) :roadPatches)
+          sprout-intersections 1 [initIntersection pxcor pycor :north :east :south :west]
+        ]
+      ]
+    ]
+    ask planners [die]
+    set selectedPatch nobody
+  ]
+end
+
+to cursorRoadDown
+  if selectedPatch != nobody [
+    ask planners [die]
+    let :patch patch-here
+    let xA [pxcor] of selectedPatch
+    let yA [pycor] of selectedPatch
+    let xB [pxcor] of :patch
+    let yB [pycor] of :patch
+    
+    ifelse (abs (yB - yA)) <= (abs (xB - xA)) [
+      ask patches with [pycor = yA and (min list xA xB) <= pxcor and pxcor <= (max list xA xB)] [sprout-planners 1 [initPlanners]]
+    ][
+      ask patches with [pxcor = xA and (min list yA yB) <= pycor and pycor <= (max list yA yB)] [sprout-planners 1 [initPlanners]]
+    ]
+  ]
+end
+
+to cursorRoadUp
+  ifelse member? ([pcolor] of patch-here) (list roadColor highwayColor) [
+    set color correctColor
+  ][
+    set color incorrectColor
+  ]
+end
+
+to cursorHouseClickDown
+  if color = correctColor [
+    set selectedPatch patch-here
+  ]
+end
+
+to cursorHouseClickUp
+  if selectedPatch != nobody [
+    ask planners [
+      hatch-houses 1 [initHouse xcor ycor 1]
+    ]
+    ask planners [die]
+    set selectedPatch nobody
+  ]
+end
+
+to cursorHouseDown
+  if selectedPatch != nobody [
+    ask planners [die]
+    let :patch patch-here
+    let xA [pxcor] of selectedPatch
+    let yA [pycor] of selectedPatch
+    let xB [pxcor] of :patch
+    let yB [pycor] of :patch
+    
+    let :validPatches patches with [
+      pcolor = terrainColor and
+      (min list xA xB) < pxcor and pxcor <= (max list xA xB) and (min list yA yB) < pycor and pycor <= (max list yA yB) and
+      (any? patches with [pcolor = roadColor] in-radius 1) and
+      (not any? other turtles-here)
+    ]
+    ask :validPatches[sprout-planners 1 [initPlanners]]
+  ]
+end
+
+to cursorHouseUp
+  set color correctColor
+end
+
+to cursorBusinessClickDown
+  if color = correctColor [
+    set selectedPatch patch-here
+  ]
+end
+
+to cursorBusinessClickUp
+  if selectedPatch != nobody [
+    ask planners [
+      hatch-businesses 1 [initBusiness xcor ycor 10]
+    ]
+    ask planners [die]
+    set selectedPatch nobody
+  ]
+end
+
+to cursorBusinessDown
+  if selectedPatch != nobody [
+    ask planners [die]
+    let :patch patch-here
+    let xA [pxcor] of selectedPatch
+    let yA [pycor] of selectedPatch
+    let xB [pxcor] of :patch
+    let yB [pycor] of :patch
+    
+    let :validPatches patches with [
+      pcolor = terrainColor and
+      (min list xA xB) < pxcor and pxcor <= (max list xA xB) and (min list yA yB) < pycor and pycor <= (max list yA yB) and
+      (any? patches with [pcolor = roadColor] in-radius 1) and
+      (not any? other turtles-here)
+    ]
+    ask :validPatches[sprout-planners 1 [initPlanners]]
+  ]
+end
+
+to cursorBusinessUp
+  set color correctColor
+end

@@ -1,0 +1,53 @@
+breed [movingtrucks movingtruck]
+movingtrucks-own [
+  speed ; Movement speed of the moving truck
+  reach ; Number of ticks the moving truck can still drive for
+  passengers ; List of persons in the moving truck
+]
+
+to initMovingtruck [:x :y :reach :passengers]
+  set speed carSpeed
+  set reach :reach
+  set passengers :passengers
+
+  set size 1
+  face one-of patches in-radius 1 with [pcolor = highwayColor]
+end
+
+to updateMovingtruck
+  ifelse reach > 0 [
+    fd speed
+    set reach reach - 1
+    if distance patch-here < (speed / 2) [
+      move-to patch-here
+
+      let :intersection one-of intersections-on patch-here
+      ifelse :intersection != nobody [
+        randomIntersectionBehavior :intersection
+      ][
+        let :patchAhead patch-ahead 1
+        if (:patchAhead = nobody) or (not member? ([pcolor] of :patchAhead) (list roadColor highwayColor)) [
+          let :directions nobody
+          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor or pcolor = highwayColor]]
+          if :directions = nobody [
+            die
+          ]
+          face one-of :directions
+        ]
+      ]
+    ]
+  ][
+    die
+  ]
+end
+
+to movingtruckDropOff [:droppedOffPassengers]
+  set passengers passengers with [not member? self :droppedOffPassengers]
+  if count passengers <= 0 [
+    die
+  ]
+end
+
+to-report movingtruckText
+	report count passengers
+end

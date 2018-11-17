@@ -1,0 +1,33 @@
+breed [guielements guielement]
+guielements-own [
+  tool ; Tool this gui element activates
+]
+
+to loadGuielements
+  file-open "gui.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    let :tool file-read
+    let :shape file-read
+    create-guielements 1 [initGuielement :x :y :tool :shape]
+  ]
+  file-close
+end
+
+to initGuielement [:x :y :tool :shape]
+  setxy :x :y
+  set tool :tool
+  set shape :shape
+  
+  set size 2
+  set color gray
+  if :tool = 0 [
+    set color blue
+  ]
+  set heading 0
+end
+
+to updateGuielement
+  setxy mouse-xcor mouse-ycor
+end

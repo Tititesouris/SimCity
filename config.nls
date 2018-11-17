@@ -15,6 +15,7 @@ to loadConfig
   
   ; Colors
   set terrainColor [160 220 90] ; Terrain
+  set highwayColor [75 75 80] ; Highway
   set labelColor [0 0 0 200] ; Labels
   set roadColor [100 100 105] ; Road
   set houseColor [255 255 150] ; Houses
@@ -24,10 +25,13 @@ to loadConfig
   set-default-shape houses "house efficiency" ; Houses
   set-default-shape powerplants "building store" ; Powerplants
   set-default-shape pumps "water tower" ; Pumps
+  set-default-shape movingtrucks "truck" ; Moving trucks
   set-default-shape cars "car" ; Cars
   set-default-shape offers "letter sealed" ; Offers
   set-default-shape electricities "lightning" ; Electricity
   set-default-shape waters "drop outline" ; Water
+  set-default-shape persons "invisible" ; Persons
+  set-default-shape highways "invisible" ; Highways
   
   set warningEmployement "warning employement" ; Warning employement
   set warningWorkforce "warning workforce" ; Warning workforce

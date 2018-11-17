@@ -5,6 +5,7 @@ houses-own [
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   happiness ; Happiness of the house
+  nbRooms ; Number of people the house can host
   residents ; List of people living in the house
   residentsAtHome ; List of people currently in the house
 ]
@@ -20,12 +21,13 @@ to loadHouses
   file-close
 end
 
-to initHouse [:x :y :nbResidents]
-  initResourceConsumer (3 + :nbResidents * 2) (:nbResidents * 1.5)
+to initHouse [:x :y :nbRooms]
+  initResourceConsumer (3 + :nbRooms * 2) (:nbRooms * 1.5)
   set happiness 100
   setxy :x :y
+  set nbRooms :nbRoom
   let :residence who
-  hatch-persons :nbResidents [initPerson :residence]
+  hatch-persons :nbRooms [initPerson :residence]
   set residents persons with [residence = :residence]
   set residentsAtHome residents
 
@@ -39,20 +41,24 @@ to updateHouse
   
   updateHouseWarnings
   
-  ifelse timeReleaseOffers <= time and time < timeLeaveHome [
-    findJob
-  ][
-    ifelse time = timeLeaveHome [
-      goWorking
+  ifelse count residents > 0 [
+    ifelse timeReleaseOffers <= time and time < timeLeaveHome [
+      findJob
     ][
-      ifelse timeLeaveWork <= time and time < timeSleep [
-        getHome
+      ifelse time = timeLeaveHome [
+        goWorking
       ][
-        if time = timeSleep [
-          goSleep
+        ifelse timeLeaveWork <= time and time < timeSleep [
+          getHome
+        ][
+          if time = timeSleep [
+            goSleep
+          ]
         ]
       ]
     ]
+  ][
+    updateEmptyHouse
   ]
   
   updateHouseHappiness
@@ -112,13 +118,25 @@ to getHome
       let :droppedOffPassengers passengers with [residence = :residence]
       let :nbDroppedOff count :droppedOffPassengers
       ask myself [set residentsAtHome (turtle-set residentsAtHome :droppedOffPassengers)]
-      dropOffPassengers :droppedOffPassengers
+      carDropOff :droppedOffPassengers
     ]
   ]
 end
 
 to goSleep
   set residentsAtHome residents
+end
+
+to updateEmptyHouse
+  let :residence who
+  let movingtrucksAround movingtrucks in-radius 1.5
+  ask movingtrucksAround [
+    let :newResidents n-of nbRooms passengers
+    if any? :newResidents [
+      ask myself [set residents (turtle-set residents :newResidents)]
+      movingtruckDropOff :newResidents
+    ]
+  ]
 end
 
 to updateHouseHappiness

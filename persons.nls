@@ -1,7 +1,7 @@
 breed [persons person]
 persons-own [
-  residence ; Who of the house this person lives in
-  employer ; Who of the business this person works for. -1 if unemployed
+  residence ; House this person lives in. -1 if looking to move in
+  employer ; Business this person works for. -1 if unemployed
   startUnemployed ; Tick on which the person started being unemployed
   startEmployed ; Tick on which the person got hired
 ]
