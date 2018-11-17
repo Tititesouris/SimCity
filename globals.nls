@@ -25,7 +25,37 @@ globals [
 to-report clock
   let :hours floor (time / hourLength)
   let :minutes floor ((time / hourLength - :hours) * 60)
+  if :hours < 10 [
+    set :hours (word "0" :hours)
+  ]
+  if :minutes < 10 [
+    set :minutes (word "0" :minutes)
+  ]
   report (word :hours "h" :minutes)
+end
+
+to-report calendar
+  let :years floor (ticks / (12 * 4 * 7 * dayLength))
+  let :year 1970 + :years
+  
+  let :months (floor (ticks / (4 * 7 * dayLength))) mod 12
+  let :month item :months ["January" "February" "March" "April" "May" "June" "July" "August" "September" "October" "November" "December"]
+  
+  let :days ((floor (ticks / dayLength)) mod 30) + 1
+  let :day (word :days "th")
+  ifelse :days = 1 [
+    set :day (word :days "st")
+  ][
+    ifelse :days = 2 [
+      set :day (word :days "nd")
+    ][
+      if :days = 3 [
+        set :day (word :days "rd")
+      ]
+    ]
+  ]
+  
+  report (word :month " " :day " " :year)
 end
 
 to wiggle [:angle :speed]

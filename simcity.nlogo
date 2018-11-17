@@ -212,10 +212,10 @@ PENS
 "employement" 1.0 0 -13840069 true "" "plot 100 * (sum [count residents with [employer != -1]] of houses) / (max (list 1 (sum [count residents] of houses)))"
 
 MONITOR
-359
-10
-429
-67
+295
+12
+427
+69
 Clock
 clock
 4
@@ -262,6 +262,17 @@ PENS
 "electricity usage" 1.0 0 -4079321 true "" "plot sum [electricityUsage] of (turtle-set houses businesses pumps)"
 "water production" 1.0 0 -13791810 true "" "plot sum [production] of pumps"
 "water usage" 1.0 0 -14730904 true "" "plot sum [waterUsage] of (turtle-set houses businesses)"
+
+MONITOR
+197
+108
+417
+165
+Calendar
+calendar
+17
+1
+14
 
 @#$#@#$#@
 ## WHAT IS IT?
