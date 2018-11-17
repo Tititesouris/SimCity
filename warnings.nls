@@ -1,14 +1,18 @@
 breed [warnings warning]
 warnings-own [
   target ; Target the warning is warning about
-  importance ; Number of ticks the warning has been existing
+  importanceStep ; Number of ticks necessary to increase importance
+  importance ; Importance of the warning increases over time
+  startWarning ; Number of ticks corersponding to the moment the warning was created
 ]
 
-to initWarning [:x :y :type :target]
+to initWarning [:x :y :type :target :importanceStep]
   setxy :x :y
   set shape :type
   set target :target
-  set importance 0
+  set importanceStep :importanceStep
+  set importance 1
+  set startWarning ticks
 
   set size 1.5
   set label ""
@@ -17,12 +21,13 @@ to initWarning [:x :y :type :target]
 end
 
 to updateWarning
-  set importance importance + 1
-  ifelse color = yellow and importance > 6 * hourLength [
+  ifelse importance = 1 and (ticks - startWarning) > importanceStep [
     set color orange
+    set importance 2
   ][
-    if color = orange and importance > 12 * hourLength [
+    if importance = 2 and (ticks - startWarning) > 2 * importanceStep [
       set color red
+     set importance 3
     ]
   ]
 

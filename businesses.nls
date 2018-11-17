@@ -4,6 +4,7 @@ businesses-own [
   electricityStored ; Current amount of electricity in the house in kW
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
+  happiness ; Happiness of the house
   nbJobs ; Total number of jobs available at the business
   employees ; List of all employees working in this business
   employeesAtWork ; List of employees currently working
@@ -23,6 +24,7 @@ end
 
 to initBusiness [:x :y :nbJobs]
   initResourceConsumer (5 + :nbJobs * 1.5) (:nbJobs * 0.5)
+  set happiness 100
   setxy :x :y
   set nbJobs :nbJobs
   set employees no-turtles
@@ -36,6 +38,8 @@ end
 to updateBusiness
   updateResourceConsumer
   
+  updateBusinessWarnings
+  
   ; Working hours
   ifelse timeReleaseOffers < time and time < timeLeaveWork [
     welcomeEmployees
@@ -46,6 +50,36 @@ to updateBusiness
       if time = timeLeaveWork [
         endWorkday
       ]
+    ]
+  ]
+  
+  updateBusinessHappiness
+end
+
+to updateBusinessWarnings
+  if time mod hourLength = 0 [
+    let :target who
+    let :warnings warnings with [target = :target]
+    let :workforceWarnings :warnings with [shape = warningWorkforce]
+    
+    let :x xcor - 0.5 + (0.5 * (count :warnings))
+    let :y ycor + 0.75
+    let :importanceStart 7 * dayLength
+    let :importanceStep 7 * dayLength
+    
+    let :nbOpenJobs nbJobs - count employees
+    let :mostRecentlyHired max-one-of employees [startEmployed]
+    let :anyLongHirelessPeriod false
+    if :mostRecentlyHired != nobody [
+      let :timeWithoutHiring ticks - ([startEmployed] of :mostRecentlyHired)
+      set :anyLongHirelessPeriod :timeWithoutHiring > :importanceStart
+    ]
+    ifelse :nbOpenJobs > 0 and :anyLongHirelessPeriod [
+      if not any? :workforceWarnings [
+        hatch-warnings 1 [initWarning :x :y warningWorkforce :target :importanceStep]
+      ]
+    ][
+      ask :workforceWarnings [die]
     ]
   ]
 end
@@ -87,6 +121,12 @@ to endWorkday
       hatch-cars 1 [initCar xcor ycor :reach :passengers]
     ]
   ]
+end
+
+to updateBusinessHappiness
+  let :target who
+  let :warnings warnings with [target = :target]
+  set happiness 100 - 10 * (sum [importance] of :warnings)
 end
 
 to-report businessText

@@ -58,11 +58,11 @@ to update
 
   ask warnings [updateWarning]
 
-  updateBetterlabels
-
   ifelse showOffers [ask offers [st]][ask offers [ht]]
   ifelse showElectricity [ask electricities [st]][ask electricities [ht]]
   ifelse showWater [ask waters [st]][ask waters [ht]]
+
+  updateBetterlabels
 
   tick
   set time time + 1
@@ -178,7 +178,7 @@ SWITCH
 176
 showElectricity
 showElectricity
-0
+1
 1
 -1000
 
@@ -194,10 +194,10 @@ showOffers
 -1000
 
 PLOT
-8
-396
-208
-546
+230
+235
+430
+385
 Employment
 ticks
 %
@@ -209,7 +209,7 @@ false
 false
 "" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
 PENS
-"default" 1.0 0 -16777216 true "" "plot 100 * (sum [count residents with [employer != -1]] of houses) / (max (list 1 (sum [count residents] of houses)))"
+"employement" 1.0 0 -13840069 true "" "plot 100 * (sum [count residents with [employer != -1]] of houses) / (max (list 1 (sum [count residents] of houses)))"
 
 MONITOR
 359
@@ -221,6 +221,47 @@ clock
 4
 1
 14
+
+PLOT
+3
+512
+430
+632
+Happiness
+ticks
+happiness
+0.0
+10.0
+0.0
+100.0
+true
+true
+"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+PENS
+"houses" 1.0 0 -1184463 true "" "plot (sum [happiness] of houses) / (max list 1 count houses)"
+"businesses" 1.0 0 -5825686 true "" "plot (sum [happiness] of businesses) / (max list 1 count businesses)"
+"total" 1.0 0 -14439633 true "" "plot (sum [happiness] of (turtle-set houses businesses)) / (max list 1 count (turtle-set houses businesses))"
+
+PLOT
+3
+388
+430
+508
+Production & Usage
+ticks
+Amount
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+PENS
+"electricity production" 1.0 0 -1184463 true "" "plot sum [production] of powerplants"
+"electricity usage" 1.0 0 -4079321 true "" "plot sum [electricityUsage] of (turtle-set houses businesses pumps)"
+"water production" 1.0 0 -13791810 true "" "plot sum [production] of pumps"
+"water usage" 1.0 0 -14730904 true "" "plot sum [waterUsage] of (turtle-set houses businesses)"
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -405,6 +446,35 @@ dot
 false
 0
 Circle -7500403 true true 90 90 120
+
+drop outline
+false
+0
+Circle -7500403 true true 73 133 152
+Circle -16777216 false false 72 132 154
+Polygon -7500403 true true 79 182 95 152 115 120 126 95 137 64 144 37 150 6 154 165
+Polygon -7500403 true true 219 181 205 152 185 120 174 95 163 64 156 37 149 7 147 166
+Line -16777216 false 150 1 149 15
+Line -16777216 false 147 15 144 31
+Line -16777216 false 145 30 141 47
+Line -16777216 false 141 46 137 61
+Line -16777216 false 138 61 132 75
+Line -16777216 false 133 75 126 91
+Line -16777216 false 127 89 120 105
+Line -16777216 false 121 104 113 122
+Line -16777216 false 113 121 104 137
+Line -16777216 false 103 137 94 152
+Line -16777216 false 206 151 210 165
+Line -16777216 false 197 137 206 152
+Line -16777216 false 186 121 195 137
+Line -16777216 false 178 105 186 123
+Line -16777216 false 173 89 180 105
+Line -16777216 false 167 75 174 91
+Line -16777216 false 162 61 168 75
+Line -16777216 false 158 46 162 61
+Line -16777216 false 154 30 158 47
+Line -16777216 false 151 15 154 31
+Line -16777216 false 150 1 151 15
 
 face happy
 false
@@ -903,15 +973,61 @@ true
 Polygon -7500403 true true 120 135 90 195 135 195 105 300 225 165 180 165 210 105 165 105 195 0 75 135
 Polygon -16777216 false false 75 135 195 0 165 105 210 105 180 165 225 165 105 300 135 195 90 195 120 135 75 135
 
+warning employement
+true
+0
+Rectangle -7500403 true true 30 90 270 225
+Rectangle -16777216 false false 30 90 270 225
+Line -16777216 false 270 105 150 180
+Line -16777216 false 30 105 150 180
+Line -16777216 false 270 225 181 161
+Line -16777216 false 30 225 119 161
+
 warning water
 true
 0
-Circle -1 true false 183 63 84
-Circle -16777216 false false 183 63 84
-Circle -7500403 true true 75 75 150
-Circle -16777216 false false 75 75 150
-Circle -1 true false 33 63 84
-Circle -16777216 false false 33 63 84
+Circle -7500403 true true 73 133 152
+Circle -16777216 false false 72 132 154
+Polygon -7500403 true true 79 182 95 152 115 120 126 95 137 64 144 37 150 6 154 165
+Polygon -7500403 true true 219 181 205 152 185 120 174 95 163 64 156 37 149 7 147 166
+Line -16777216 false 150 1 149 15
+Line -16777216 false 147 15 144 31
+Line -16777216 false 145 30 141 47
+Line -16777216 false 141 46 137 61
+Line -16777216 false 138 61 132 75
+Line -16777216 false 133 75 126 91
+Line -16777216 false 127 89 120 105
+Line -16777216 false 121 104 113 122
+Line -16777216 false 113 121 104 137
+Line -16777216 false 103 137 94 152
+Line -16777216 false 206 151 210 165
+Line -16777216 false 197 137 206 152
+Line -16777216 false 186 121 195 137
+Line -16777216 false 178 105 186 123
+Line -16777216 false 173 89 180 105
+Line -16777216 false 167 75 174 91
+Line -16777216 false 162 61 168 75
+Line -16777216 false 158 46 162 61
+Line -16777216 false 154 30 158 47
+Line -16777216 false 151 15 154 31
+Line -16777216 false 150 1 151 15
+
+warning workforce
+true
+0
+Rectangle -1 true false 120 90 180 180
+Polygon -13345367 true false 135 90 150 105 135 180 150 195 165 180 150 105 165 90
+Polygon -7500403 true true 120 90 105 90 60 195 90 210 116 154 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 183 153 210 210 240 195 195 90 180 90 150 165
+Circle -7500403 true true 110 5 80
+Rectangle -7500403 true true 127 76 172 91
+Line -16777216 false 172 90 161 94
+Line -16777216 false 128 90 139 94
+Polygon -13345367 true false 195 225 195 300 270 270 270 195
+Rectangle -13791810 true false 180 225 195 300
+Polygon -14835848 true false 180 226 195 226 270 196 255 196
+Polygon -13345367 true false 209 202 209 216 244 202 243 188
+Line -16777216 false 180 90 150 165
+Line -16777216 false 120 90 150 165
 
 water tower
 false

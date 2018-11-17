@@ -27,10 +27,10 @@ to loadConfig
   set-default-shape cars "car" ; Cars
   set-default-shape offers "letter sealed" ; Offers
   set-default-shape electricities "lightning" ; Electricity
-  set-default-shape waters "molecule water" ; Water
+  set-default-shape waters "drop outline" ; Water
   
-  set warningEmployement "letter sealed" ; Warning employement
-  set warningWorkforce "person business" ; Warning workforce
+  set warningEmployement "warning employement" ; Warning employement
+  set warningWorkforce "warning workforce" ; Warning workforce
   set warningElectricity "warning electricity" ; Warning electricity
   set warningWater "warning water" ; Warning water
 end

@@ -4,6 +4,7 @@ houses-own [
   electricityStored ; Current amount of electricity in the house in kW
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
+  happiness ; Happiness of the house
   residents ; List of people living in the house
   residentsAtHome ; List of people currently in the house
 ]
@@ -21,6 +22,7 @@ end
 
 to initHouse [:x :y :nbResidents]
   initResourceConsumer (3 + :nbResidents * 2) (:nbResidents * 1.5)
+  set happiness 100
   setxy :x :y
   let :residence who
   hatch-persons :nbResidents [initPerson :residence]
@@ -34,6 +36,9 @@ end
 
 to updateHouse
   updateResourceConsumer
+  
+  updateHouseWarnings
+  
   ifelse timeReleaseOffers <= time and time < timeLeaveHome [
     findJob
   ][
@@ -49,6 +54,30 @@ to updateHouse
       ]
     ]
   ]
+  
+  updateHouseHappiness
+end
+
+to updateHouseWarnings
+  if time mod hourLength = 0 [
+    let :target who
+    let :warnings warnings with [target = :target]
+    let :employementWarnings :warnings with [shape = warningEmployement]
+    
+    let :x xcor - 0.5 + (0.5 * (count :warnings))
+    let :y ycor + 0.75
+    let :importanceStart 3 * dayLength
+    let :importanceStep dayLength
+    
+    let :longUnemployedResidents residents with [(employer = -1) and ((ticks - startUnemployed) > :importanceStart)]
+    ifelse count :longUnemployedResidents > 0 [
+      if not any? :employementWarnings [
+        hatch-warnings 1 [initWarning :x :y warningEmployement :target :importanceStep]
+      ]
+    ][
+      ask :employementWarnings [die]
+    ]
+  ]
 end
 
 to findJob
@@ -59,7 +88,7 @@ to findJob
     ask offersAround [
       let :nbEmploying (min list nbOpenJobs :nbUnemployed)
       let :recruiter recruiter
-      ask n-of :nbEmploying :unemployedResidents [set employer :recruiter]
+      ask n-of :nbEmploying :unemployedResidents [set employer :recruiter set startEmployed ticks]
       acceptOffer :nbEmploying
     ]
   ]
@@ -90,6 +119,12 @@ end
 
 to goSleep
   set residentsAtHome residents
+end
+
+to updateHouseHappiness
+  let :target who
+  let :warnings warnings with [target = :target]
+  set happiness 100 - 10 * (sum [importance] of :warnings)
 end
 
 to-report houseText
