@@ -23,7 +23,7 @@ to initPump [:x :y :production]
   setxy :x :y
   set production :production
 
-  set size 2
+  set size 1.8
   set color blue
   face one-of patches in-radius 1 with [pcolor = roadColor]
 end

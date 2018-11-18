@@ -156,7 +156,7 @@ to cursorRoadClickUp
             set pcolor roadColor
           ]
           
-          let :roadPatches patches with [(pcolor = roadColor or pcolor = highwayColor) and not any? planners-here] in-radius 1
+          let :roadPatches patches in-radius 1 with [(pcolor = roadColor or pcolor = highwayColor) and not any? planners-here]
           if any? :roadPatches [
             let :north (any? planners-at 0 1) or (member? (patch-at 0 1) :roadPatches)
             let :east (any? planners-at 1 0) or (member? (patch-at 1 0) :roadPatches)

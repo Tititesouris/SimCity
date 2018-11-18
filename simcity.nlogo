@@ -194,7 +194,7 @@ SWITCH
 257
 showLabels
 showLabels
-0
+1
 1
 -1000
 
@@ -227,7 +227,7 @@ SWITCH
 299
 showOffers
 showOffers
-0
+1
 1
 -1000
 
@@ -687,6 +687,40 @@ Rectangle -16777216 true false 120 210 180 285
 Polygon -7500403 true true 15 120 150 15 285 120
 Line -16777216 false 30 120 270 120
 Circle -7500403 false true 2 2 295
+
+gui powerplant
+true
+0
+Rectangle -7500403 true true 30 45 45 240
+Rectangle -16777216 false false 30 45 45 165
+Rectangle -7500403 true true 15 165 285 255
+Rectangle -16777216 true false 120 195 180 255
+Line -7500403 true 150 195 150 255
+Rectangle -16777216 true false 30 180 105 240
+Rectangle -16777216 true false 195 180 270 240
+Line -16777216 false 0 165 300 165
+Polygon -7500403 true true 0 165 45 135 60 90 240 90 255 135 300 165
+Rectangle -7500403 true true 0 0 75 45
+Rectangle -16777216 false false 0 0 75 45
+Polygon -7500403 false true 0 165
+Polygon -16777216 false false 0 165 45 135 60 90 240 90 255 135 300 165 0 165
+Polygon -16777216 false false 15 165 15 255 285 255 285 165
+Circle -7500403 false true 2 2 295
+
+gui pump
+true
+0
+Rectangle -7500403 true true 90 225 210 270
+Line -16777216 false 75 225 225 225
+Rectangle -16777216 false false 90 225 210 270
+Polygon -7500403 true true 90 225 105 75 195 75 210 225
+Polygon -16777216 false false 90 225 105 75 195 75 210 225
+Rectangle -7500403 true true 75 90 120 60
+Rectangle -7500403 true true 75 54 225 75
+Rectangle -7500403 true true 135 150 165 120
+Rectangle -7500403 true true 180 90 225 60
+Polygon -16777216 false false 90 75 75 75 75 30 120 30 120 54 135 54 135 30 165 30 165 54 179 54 180 30 225 30 225 75
+Circle -7500403 false true 0 0 300
 
 gui road
 true

@@ -29,7 +29,7 @@ to initHouse [:x :y :nbRooms]
   set residents no-turtles
   set residentsAtHome residents
 
-  set size 2
+  set size 1.5
   set color houseColor
   face one-of patches in-radius 1 with [pcolor = roadColor]
 end

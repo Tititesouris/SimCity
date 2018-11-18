@@ -14,13 +14,13 @@ to updateRoamingAgent [:roamingAgentIntersectionBehavior]
     if distance patch-here < (speed / 2) [
       move-to patch-here
 
-      let :intersection one-of intersections-on patch-here
+      let :intersection one-of intersections-here
       ifelse :intersection != nobody [
         (run :roamingAgentIntersectionBehavior :intersection)
       ][
         let :patchAhead patch-ahead 1
         if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
-          let :directions []
+          let :directions no-patches
           ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor]]
           face one-of :directions
         ]
@@ -28,5 +28,35 @@ to updateRoamingAgent [:roamingAgentIntersectionBehavior]
     ]
   ][
     die
+  ]
+end
+
+to randomIntersectionBehavior [:intersection]
+  let :patchBehind patch-ahead -1
+  let :directions ([directions] of :intersection) with [self != :patchBehind]
+  let :direction one-of :directions
+  if :direction != nobody [
+    face :direction
+  ]
+end
+
+to cloneIntersectionBehavior [:intersection]
+  let :resources (turtle-set offers electricities waters) with [group = [group] of myself]
+  ifelse member? :intersection visitedIntersections [
+    ifelse count :resources > 1 [
+      die
+    ][
+      set visitedIntersections no-turtles
+    ]
+  ][
+    ask :resources [set visitedIntersections (turtle-set visitedIntersections :intersection)]
+
+    let :directions [directions] of :intersection
+    if any? :directions [
+      let :mainDirection one-of :directions
+      set :directions :directions with [self != :mainDirection]
+      face :mainDirection
+      ask :directions [ask myself [let :direction myself hatch 1 [face :direction fd speed]]]
+    ]
   ]
 end

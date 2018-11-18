@@ -27,35 +27,6 @@ to updateResource
   updateRoamingAgent [[:intersection] -> (cloneIntersectionBehavior :intersection)]
 end
 
-to randomIntersectionBehavior [:intersection]
-  let :directions [directions] of :intersection
-  set :directions remove patch-ahead -1 :directions
-  let :direction one-of :directions
-  if :direction != nobody [
-    face :direction
-  ]
-end
-
-to cloneIntersectionBehavior [:intersection]
-  let :resources (turtle-set offers electricities waters) with [group = [group] of myself]
-  ifelse member? :intersection visitedIntersections [
-    ifelse count :resources > 1 [
-      die
-    ][
-      set visitedIntersections no-turtles
-    ]
-  ][
-    ask :resources [set visitedIntersections (turtle-set visitedIntersections :intersection)]
-
-    let :directions [directions] of :intersection
-    if not empty? :directions [
-      face item 0 :directions
-      set :directions remove-item 0 :directions
-      ask patch-set :directions [ask myself [let :direction myself hatch 1 [face :direction fd speed]]]
-    ]
-  ]
-end
-
 to-report resourceText
   report amount
 end

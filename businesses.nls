@@ -30,7 +30,7 @@ to initBusiness [:x :y :nbJobs]
   set employees no-turtles
   set employeesAtWork no-turtles
 
-  set size 2
+  set size 1.2
   set color white
   face one-of patches in-radius 1 with [pcolor = roadColor]
 end

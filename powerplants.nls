@@ -18,7 +18,7 @@ to initPowerplant [:x :y :production]
   setxy :x :y
   set production :production
 
-  set size 2
+  set size 1.2
   set color yellow
   face one-of patches in-radius 1 with [pcolor = roadColor]
 end

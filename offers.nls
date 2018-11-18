@@ -13,7 +13,7 @@ to initOffer [:x :y :reach :recruiter :nbOpenJobs]
   set recruiter :recruiter
   set nbOpenJobs :nbOpenJobs
   set group who
-  set visitedIntersections []
+  set visitedIntersections no-turtles
 end
 
 to acceptOffer [:nbEmploying]
