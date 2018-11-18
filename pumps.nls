@@ -1,7 +1,7 @@
 breed [pumps pump]
 pumps-own [
-  electricityUsage ; Electricity usage in kWh
-  electricityStored ; Current amount of electricity in the house in kW
+  electricityUsage ; Electricity usage in Wh
+  electricityStored ; Current amount of electricity in the house in W
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   production ; Amount of water produced in L/h
@@ -19,7 +19,7 @@ to loadPumps
 end
 
 to initPump [:x :y :production]
-  initResourceConsumer (0.05 * :production) 0
+  initResourceConsumer
   setxy :x :y
   set production :production
 
@@ -29,7 +29,10 @@ to initPump [:x :y :production]
 end
 
 to updatePump
+  set electricityUsage 0.75 * production
+  set waterUsage 0
   updateResourceConsumer
+  
   if (time mod hourLength = 0) and electricityStored > 0 [
     hatch-waters 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
   ]

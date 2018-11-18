@@ -1,6 +1,6 @@
 breed [powerplants powerplant]
 powerplants-own [
-  production ; Amount of electricity produced in kWh
+  production ; Amount of electricity produced in Wh
 ]
 
 to loadPowerplants

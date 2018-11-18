@@ -34,6 +34,10 @@ to updateBetterlabels
       let :text offerText
       hatch-betterlabels 1 [initBetterlabel :text]
     ]
+    ask movingtrucks [
+      let :text movingtruckText
+      hatch-betterlabels 1 [initBetterlabel :text]
+    ]
     ask cars [
       let :text carText
       hatch-betterlabels 1 [initBetterlabel :text]

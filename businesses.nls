@@ -1,7 +1,7 @@
 breed [businesses business]
 businesses-own [
-  electricityUsage ; Electricity usage in kWh
-  electricityStored ; Current amount of electricity in the house in kW
+  electricityUsage ; Electricity usage in Wh
+  electricityStored ; Current amount of electricity in the house in W
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   happiness ; Happiness of the house
@@ -23,7 +23,7 @@ end
 
 
 to initBusiness [:x :y :nbJobs]
-  initResourceConsumer (5 + :nbJobs * 1.5) (:nbJobs * 0.5)
+  initResourceConsumer
   set happiness 100
   setxy :x :y
   set nbJobs :nbJobs
@@ -36,6 +36,8 @@ to initBusiness [:x :y :nbJobs]
 end
 
 to updateBusiness
+  set electricityUsage 2 * nbJobs + 1 * (count employeesAtWork)
+  set waterUsage 0.4 * nbJobs + 0.5 * (count employeesAtWork)
   updateResourceConsumer
   
   updateBusinessWarnings

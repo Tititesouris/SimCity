@@ -20,28 +20,28 @@ end
 to initIntersection [:x :y :north :east :south :west]
   setxy :x :y
   set heading 0
-  set directions []
+  set directions no-patches
   let :nbDirections 0
   let :direction 0
   if :north [
-    set directions lput patch-ahead 1 directions
+    set directions (patch-set directions (patch-at 0 1))
     set :nbDirections :nbDirections + 1
     set :direction 0
   ]
   if :east [
-    set directions lput patch-right-and-ahead 90 1 directions
+    set directions (patch-set directions (patch-at 1 0))
     set :nbDirections :nbDirections + 1
     set :direction 90
   ]
   if :south [
-    set directions lput patch-ahead -1 directions
+    set directions (patch-set directions (patch-at 0 -1))
     set :nbDirections :nbDirections + 1
     if not :west [
       set :direction 180
     ]
   ]
   if :west [
-    set directions lput patch-left-and-ahead 90 1 directions
+    set directions (patch-set directions (patch-at -1 0))
     set :nbDirections :nbDirections + 1
     if not :north [
       set :direction 270

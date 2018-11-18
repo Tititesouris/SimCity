@@ -25,7 +25,7 @@ to initHighway [:x :y]
 end
 
 to updateHighway
-  let :dailyProbability 2
+  let :dailyProbability 0.5
   if random ((1 / :dailyProbability) * dayLength) = 0 [
     let :nbPassengers (random 4) + 1
     hatch-persons :nbPassengers [initPerson myself]

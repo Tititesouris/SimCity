@@ -1,7 +1,5 @@
-to initResourceConsumer [:electricityUsage :waterUsage]
-  set electricityUsage :electricityUsage
+to initResourceConsumer
   set electricityStored 0
-  set waterUsage :waterUsage
   set waterStored 0
 end
 

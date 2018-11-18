@@ -1,7 +1,7 @@
 breed [houses house]
 houses-own [
-  electricityUsage ; Electricity usage in kWh
-  electricityStored ; Current amount of electricity in the house in kW
+  electricityUsage ; Electricity usage in Wh
+  electricityStored ; Current amount of electricity in the house in W
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   happiness ; Happiness of the house
@@ -22,13 +22,11 @@ to loadHouses
 end
 
 to initHouse [:x :y :nbRooms]
-  initResourceConsumer (3 + :nbRooms * 2) (:nbRooms * 1.5)
+  initResourceConsumer
   set happiness 100
   setxy :x :y
-  set nbRooms :nbRoom
-  let :residence who
-  hatch-persons :nbRooms [initPerson :residence]
-  set residents persons with [residence = :residence]
+  set nbRooms :nbRooms
+  set residents no-turtles
   set residentsAtHome residents
 
   set size 2
@@ -37,11 +35,17 @@ to initHouse [:x :y :nbRooms]
 end
 
 to updateHouse
+  set electricityUsage 0.25 * (count residents) + 0.5 * (count residentsAtHome)
+  set waterUsage 0.2 * (count residents) + 1 * (count residentsAtHome)
   updateResourceConsumer
   
   updateHouseWarnings
   
-  ifelse count residents > 0 [
+  if count residents < nbRooms [
+    updateMovingIn
+  ]
+  
+  if count residents > 0 [
     ifelse timeReleaseOffers <= time and time < timeLeaveHome [
       findJob
     ][
@@ -57,8 +61,6 @@ to updateHouse
         ]
       ]
     ]
-  ][
-    updateEmptyHouse
   ]
   
   updateHouseHappiness
@@ -127,12 +129,14 @@ to goSleep
   set residentsAtHome residents
 end
 
-to updateEmptyHouse
+to updateMovingIn
   let :residence who
   let movingtrucksAround movingtrucks in-radius 1.5
   ask movingtrucksAround [
-    let :newResidents n-of nbRooms passengers
+    let :nbNewResidents min list ([nbRooms - (count residents)] of myself) (count passengers)
+    let :newResidents n-of :nbNewResidents passengers
     if any? :newResidents [
+      ask :newResidents [set residence myself]
       ask myself [set residents (turtle-set residents :newResidents)]
       movingtruckDropOff :newResidents
     ]
