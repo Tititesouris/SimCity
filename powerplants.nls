@@ -1,6 +1,7 @@
 breed [powerplants powerplant]
 powerplants-own [
   production ; Amount of electricity produced in Wh
+  entrance ; Patch of road to enter and exit the powerplant
 ]
 
 to loadPowerplants
@@ -17,15 +18,19 @@ end
 to initPowerplant [:x :y :production]
   setxy :x :y
   set production :production
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
 
   set size 1.2
   set color yellow
-  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
 to updatePowerplant
   if time mod hourLength = 0 [
-    hatch-electricities 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
+    let :amount production
+    ask entrance [
+      sprout-electricities 1 [initResource xcor ycor (3 * hourLength) :amount set color yellow]
+    ]
   ]
 end
 

@@ -6,11 +6,13 @@ cars-own [
 ]
 
 to initCar [:x :y :reach :passengers]
-  initRoamingAgent :x :y carSpeed :reach
+  initRoamingAgent :x :y vehicleSpeed :reach
   set passengers :passengers
+  ask passengers [move-to myself]
 end
 
 to updateCar
+  ask passengers [move-to myself]
   updateRoamingAgent [[:intersection] -> (randomIntersectionBehavior :intersection)]
 end
 

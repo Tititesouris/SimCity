@@ -1,0 +1,35 @@
+to updateHouseZone
+  if not any? houses-here [
+    let :movingtruckAround one-of movingtrucks in-radius 1.5
+    if :movingtruckAround != nobody [
+      let :passengers [passengers] of :movingtruckAround
+      sprout-houses 1 [
+        initHouse xcor ycor (count :passengers)
+        ask :passengers [
+          set residence myself
+          move-to myself
+        ]
+      ]
+      ask :movingtruckAround [movingtruckDropOff :passengers]
+    ]
+  ]
+end
+
+to updateBusinessZone
+  if not any? businesses-here [
+    let :carAround one-of cars in-radius 1.5
+    if :carAround != nobody [
+      let :unemployedPassengers ([passengers] of :carAround) with [employer = -1]
+      if any? :unemployedPassengers [
+        sprout-businesses 1 [
+          initBusiness xcor ycor (count :unemployedPassengers)
+          ask :unemployedPassengers [
+            set employer myself
+            move-to myself
+          ]
+        ]
+        ask :carAround [carDropOff :unemployedPassengers]
+      ]
+    ]
+  ]
+end

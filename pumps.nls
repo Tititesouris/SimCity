@@ -5,6 +5,7 @@ pumps-own [
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   production ; Amount of water produced in L/h
+  entrance ; Patch of road to enter and exit the pump
 ]
 
 to loadPumps
@@ -22,10 +23,11 @@ to initPump [:x :y :production]
   initResourceConsumer
   setxy :x :y
   set production :production
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
 
   set size 1.8
   set color blue
-  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
 to updatePump
@@ -34,7 +36,10 @@ to updatePump
   updateResourceConsumer
   
   if (time mod hourLength = 0) and electricityStored > 0 [
-    hatch-waters 1 [initResource xcor ycor (3 * hourLength) [production] of myself]
+    let :amount production
+    ask entrance [
+      sprout-waters 1 [initResource xcor ycor (3 * hourLength) :amount set color blue]
+    ]
   ]
 end
 

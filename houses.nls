@@ -5,9 +5,12 @@ houses-own [
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   happiness ; Happiness of the house
+  entrance ; Patch of road to enter and exit the house
   nbRooms ; Number of people the house can host
   residents ; List of people living in the house
+  nbResidents ; Number of people living in the house
   residentsAtHome ; List of people currently in the house
+  nbResidentsAtHome ; Number of people currently in the house
 ]
 
 to loadHouses
@@ -24,38 +27,39 @@ end
 to initHouse [:x :y :nbRooms]
   initResourceConsumer
   set happiness 100
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
   setxy :x :y
   set nbRooms :nbRooms
-  set residents no-turtles
-  set residentsAtHome residents
 
   set size 1.5
   set color houseColor
-  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
 to updateHouse
-  set electricityUsage 0.25 * (count residents) + 0.5 * (count residentsAtHome)
-  set waterUsage 0.2 * (count residents) + 1 * (count residentsAtHome)
+  set residents persons with [residence = myself]
+  set nbResidents count residents
+  set residentsAtHome persons-here with [residence = myself]
+  set nbResidentsAtHome count residentsAtHome
+  
+  set electricityUsage 0.25 * nbResidents + 0.5 * nbResidentsAtHome
+  set waterUsage 0.2 * nbResidents + 1 * nbResidentsAtHome
   updateResourceConsumer
   
   updateHouseWarnings
   
-  if count residents < nbRooms [
-    updateMovingIn
-  ]
-  
-  if count residents > 0 [
+  if nbResidents > 0 [
     ifelse timeReleaseOffers <= time and time < timeLeaveHome [
       findJob
     ][
       ifelse time = timeLeaveHome [
         goWorking
+        goVisit
       ][
         ifelse timeLeaveWork <= time and time < timeSleep [
           getHome
         ][
-          if time = timeSleep [
+          if time >= timeSleep [
             goSleep
           ]
         ]
@@ -68,8 +72,7 @@ end
 
 to updateHouseWarnings
   if time mod hourLength = 0 [
-    let :target who
-    let :warnings warnings with [target = :target]
+    let :warnings warnings with [target = myself]
     let :employementWarnings :warnings with [shape = warningEmployement]
     
     let :x xcor - 0.5 + (0.5 * (count :warnings))
@@ -80,7 +83,7 @@ to updateHouseWarnings
     let :longUnemployedResidents residents with [(employer = -1) and ((ticks - startUnemployed) > :importanceStart)]
     ifelse count :longUnemployedResidents > 0 [
       if not any? :employementWarnings [
-        hatch-warnings 1 [initWarning :x :y warningEmployement :target :importanceStep]
+        hatch-warnings 1 [initWarning :x :y warningEmployement myself :importanceStep]
       ]
     ][
       ask :employementWarnings [die]
@@ -103,52 +106,49 @@ to findJob
 end
 
 to goWorking
-  let :employedResidents residents with [employer != -1]
-  let :nbEmployed count :employedResidents
-  if :nbEmployed > 0 [
-    let :reach timeLeaveWork - time - hourLength ; Can drive until 1h before work closes
-    set residentsAtHome residents with [employer = -1]
-    hatch-cars 1 [initCar xcor ycor :reach :employedResidents]
+  let :employedResidentsAtHome residentsAtHome with [employer != -1]
+  let :nbEmployedAtHome count :employedResidentsAtHome
+  if :nbEmployedAtHome > 0 [
+    let :reach timeSleep - time - hourLength ; Can drive until 1h before going to sleep
+    ask entrance [
+      sprout-cars 1 [initCar xcor ycor :reach :employedResidentsAtHome]
+    ]
+  ]
+end
+
+to goVisit
+  let :unemployedResidentsAtHome residentsAtHome with [employer = -1]
+  let :nbUnemployedAtHome count :unemployedResidentsAtHome
+  if :nbUnemployedAtHome > 0 [
+    let :reach timeSleep - time - hourLength ; Can drive until 1h before going to sleep
+    ask entrance [
+      sprout-cars 1 [initCar xcor ycor :reach :unemployedResidentsAtHome]
+    ]
   ]
 end
 
 to getHome
-  let :residence who
-  if count residentsAtHome < count residents [
-    let carsAround cars in-radius 1.5
-    ask carsAround [
-      let :droppedOffPassengers passengers with [residence = :residence]
-      let :nbDroppedOff count :droppedOffPassengers
-      ask myself [set residentsAtHome (turtle-set residentsAtHome :droppedOffPassengers)]
-      carDropOff :droppedOffPassengers
+  let :residence self
+  if nbResidentsAtHome < nbResidents [
+    ask entrance [
+      ask cars-here [
+        let :droppedOffPassengers passengers with [residence = :residence]
+        ask :droppedOffPassengers [move-to :residence]
+        carDropOff :droppedOffPassengers
+      ]
     ]
   ]
 end
 
 to goSleep
-  set residentsAtHome residents
-end
-
-to updateMovingIn
-  let :residence who
-  let movingtrucksAround movingtrucks in-radius 1.5
-  ask movingtrucksAround [
-    let :nbNewResidents min list ([nbRooms - (count residents)] of myself) (count passengers)
-    let :newResidents n-of :nbNewResidents passengers
-    if any? :newResidents [
-      ask :newResidents [set residence myself]
-      ask myself [set residents (turtle-set residents :newResidents)]
-      movingtruckDropOff :newResidents
-    ]
-  ]
+  ask residents [move-to myself]
 end
 
 to updateHouseHappiness
-  let :target who
-  let :warnings warnings with [target = :target]
+  let :warnings warnings with [target = myself]
   set happiness 100 - 10 * (sum [importance] of :warnings)
 end
 
 to-report houseText
-  report (word (count residents with [employer != -1]) "/" (count residentsAtHome) "/" (count residents))
+  report (word (count residents with [employer != -1]) "/" nbResidentsAtHome "/" nbResidents)
 end

@@ -1,0 +1,24 @@
+; Times
+2400 ; Number of ticks in a day
+100 ; Job offers release
+700 ; Going to work
+1800 ; Going home
+2300 ; Going to sleep
+; Money
+500000 ; Starting money
+20 ; Road price
+100000 ; Powerplant price
+80000 ; Pump price
+; Speeds
+0.5 ; Offers
+0.5 ; Cars
+0.75 ; Resources
+; Colors
+[0 0 0 200] ; Labels
+[160 220 90] ; Terrain
+[75 75 80] ; Highway
+[100 100 105] ; Road
+[255 255 150] ; Houses
+[255 255 255] ; Businesses
+[50 255 50] ; House zones
+[255 50 150] ; Business zones

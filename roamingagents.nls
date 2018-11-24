@@ -3,7 +3,7 @@ to initRoamingAgent [:x :y :speed :reach]
   set speed :speed
   set reach :reach
 
-  face one-of patches in-radius 1 with [pcolor = roadColor]
+  face one-of neighbors4 with [pcolor = roadColor]
   set size 1
 end
 
@@ -21,7 +21,7 @@ to updateRoamingAgent [:roamingAgentIntersectionBehavior]
         let :patchAhead patch-ahead 1
         if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
           let :directions no-patches
-          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor]]
+          ask patch-here [set :directions neighbors4 with [pcolor = roadColor]]
           face one-of :directions
         ]
       ]

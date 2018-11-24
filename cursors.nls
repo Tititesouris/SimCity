@@ -17,16 +17,15 @@ to initCursor
   set incorrectColor red
   let :noneTool (list [[] -> cursorSelectIntersection] [[] -> doNothing] [[] -> doNothing] [[] -> setCorrectColor])
   let :roadTool (list [[] -> markSelectedPatch] [[] -> cursorRoadClickUp] [[] -> cursorRoadDown] [[] -> cursorRoadUp])
-  let :houseTool (list [[] -> markSelectedPatch] [[] -> cursorHouseClickUp] [[] -> rectangleSelectionNextToRoads houses] [[] -> setCorrectColor])
-  let :businessTool (list [[] -> markSelectedPatch] [[] -> cursorBusinessClickUp] [[] -> rectangleSelectionNextToRoads businesses] [[] -> setCorrectColor])
-  let :powerplantTool (list [[] -> markSelectedPatch] [[] -> cursorPowerplantClickUp] [[] -> rectangleSelectionNextToRoads powerplants] [[] -> setCorrectColor])
-  let :pumpTool (list [[] -> markSelectedPatch] [[] -> cursorPumpClickUp] [[] -> rectangleSelectionNextToRoads pumps] [[] -> setCorrectColor])
+  let :houseTool (list [[] -> markSelectedPatch] [[] -> cursorHouseClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
+  let :businessTool (list [[] -> markSelectedPatch] [[] -> cursorBusinessClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
+  let :powerplantTool (list [[] -> markSelectedPatch] [[] -> cursorPowerplantClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
+  let :pumpTool (list [[] -> markSelectedPatch] [[] -> cursorPumpClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
   set tools (list :noneTool :roadTool :houseTool :businessTool :powerplantTool :pumpTool)
   set activeTool 0
   set selectedPatch nobody
   
   set size 0.5
-  set shape "gui cursor"
   set color incorrectColor
   set heading 0
 end
@@ -87,7 +86,7 @@ to markSelectedPatch
   ]
 end
 
-to rectangleSelectionNextToRoads [:breed]
+to rectangleSelectionNextToRoads
   if selectedPatch != nobody [
     ask planners [die]
     let :patch patch-here
@@ -102,6 +101,7 @@ to rectangleSelectionNextToRoads [:breed]
       (any? patches with [pcolor = roadColor] in-radius 1) and
       (not any? turtles-here with [not member? breed (list betterlabels cursors)])
     ]
+    
     ask :validPatches [sprout-planners 1 [initPlanners]]
   ]
 end
@@ -200,7 +200,8 @@ end
 to cursorHouseClickUp
   if selectedPatch != nobody [
     ask planners [
-      hatch-houses 1 [initHouse xcor ycor 1]
+      ;hatch-houses 1 [initHouse xcor ycor 1]
+      ask patch-here [set pcolor houseZoneColor]
     ]
     ask planners [die]
     set selectedPatch nobody
@@ -210,7 +211,8 @@ end
 to cursorBusinessClickUp
   if selectedPatch != nobody [
     ask planners [
-      hatch-businesses 1 [initBusiness xcor ycor 10]
+      ;hatch-businesses 1 [initBusiness xcor ycor 10]
+      ask patch-here [set pcolor businessZoneColor]
     ]
     ask planners [die]
     set selectedPatch nobody

@@ -7,20 +7,28 @@ globals [
   timeLeaveWork ; Number of ticks to wait after a new day starts for people to leave work to go home
   timeSleep ; Number of ticks to wait after a new day starts for people to go to sleep
 
+  money ; How much money the player has
+  roadprice ; Base price of a patch of road
+  powerplantPrice ; Base price of a powerplant
+  pumpPrice ; Base price of a pump
+  
+  offerSpeed ; Speed of offers
+  vehicleSpeed ; Speed of vehicles
+  resourceSpeed ; Speed of electricity and water
+
+  labelColor ; Color of labels
+  terrainColor ; Color of the terrain
+  highwayColor ; Color of the highway
+  roadColor ; Color of the road
+  houseColor ; Base color of a house
+  businessColor ; Base color of a business
+  houseZoneColor ; Color of a house zone
+  businessZoneColor ; Color of a business zone
+
   warningEmployement ; Warning sign when employement is not satisfying
   warningWorkforce ; Warning sign when the workforce is not satisfying
   warningElectricity ; Warning sign when missing electricity
   warningWater ; Warning sign when missing water
-
-  terrainColor ; Color of the terrain
-  highwayColor ; Color of the highway
-  labelColor ; Color of labels
-  roadColor ; Color of the road
-  houseColor ; Base color of a house
-
-  offerSpeed ; Speed of offers
-  carSpeed ; Speed of cars
-  resourceSpeed ; Speed of electricity and water
   
   gui-ready? ; Whether or not the UI has been setup correctly
 ]

@@ -6,15 +6,17 @@ movingtrucks-own [
 ]
 
 to initMovingtruck [:x :y :reach :passengers]
-  set speed carSpeed
+  set speed vehicleSpeed
   set reach :reach
   set passengers :passengers
+  ask passengers [move-to myself]
 
   set size 1
-  face one-of patches in-radius 1 with [pcolor = highwayColor]
+  face one-of neighbors4 with [pcolor = highwayColor]
 end
 
 to updateMovingtruck
+  ask passengers [move-to myself]
   ifelse reach > 0 [
     fd speed
     set reach reach - 1
@@ -28,15 +30,13 @@ to updateMovingtruck
         let :patchAhead patch-ahead 1
         if (:patchAhead = nobody) or (not member? ([pcolor] of :patchAhead) (list roadColor highwayColor)) [
           let :directions no-patches
-          ask patch-here [set :directions other patches in-radius 1 with [pcolor = roadColor or pcolor = highwayColor]]
-          if not any? :directions [
-            die
-          ]
+          ask patch-here [set :directions neighbors4 with [pcolor = roadColor or pcolor = highwayColor]]
           face one-of :directions
         ]
       ]
     ]
   ][
+    ask passengers [die]
     die
   ]
 end

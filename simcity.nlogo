@@ -1,11 +1,11 @@
 __includes [
   "globals.nls"
-  "config.nls"
 
   "movingtrucks.nls"
   "highways.nls"
 
   "planners.nls"
+  "zones.nls"
   "guielements.nls"
   "cursors.nls"
 
@@ -58,12 +58,67 @@ end
 
 ; Load game data from files
 to load
-  loadConfig
-  ask patches [set pcolor terrainColor]
   set-current-directory "./config/"
+  loadShapes
+  loadConfig
   loadGuielements
   loadHighways
   set-current-directory "./../"
+end
+
+to loadShapes
+  set-default-shape cursors "gui cursor"
+  set-default-shape planners "square 2"
+
+  set-default-shape persons "person"
+  set-default-shape highways "invisible"
+
+  set-default-shape businesses "house colonial"
+  set-default-shape houses "house efficiency"
+  set-default-shape powerplants "building store"
+  set-default-shape pumps "water tower"
+
+  set-default-shape movingtrucks "truck"
+  set-default-shape cars "car"
+  set-default-shape offers "letter sealed"
+  set-default-shape electricities "lightning"
+  set-default-shape waters "drop outline"
+
+  set warningEmployement "warning employement"
+  set warningWorkforce "warning workforce"
+  set warningElectricity "warning electricity"
+  set warningWater "warning water"
+end
+
+to loadConfig
+  file-open "config.txt"
+  set dayLength file-read
+  set hourLength dayLength / 24 ; Number of ticks in an hour
+
+  set timeReleaseOffers file-read
+  set timeLeaveHome file-read
+  set timeLeaveWork file-read
+  set timeSleep file-read
+
+  set money file-read
+  set roadprice file-read
+  set powerplantPrice file-read
+  set pumpPrice file-read
+
+  set offerSpeed file-read
+  set vehicleSpeed file-read
+  set resourceSpeed file-read
+
+  set labelColor file-read
+  set terrainColor file-read
+  ask patches [set pcolor terrainColor]
+  set highwayColor file-read
+  set roadColor file-read
+  set houseColor file-read
+  set businessColor file-read
+  set houseZoneColor file-read
+  set businessZoneColor file-read
+  file-close
 end
 
 ; Load save data from files
@@ -81,6 +136,9 @@ end
 ; Update every tick
 to update
 
+  ask patches with [pcolor = houseZoneColor] [updateHouseZone]
+  ask patches with [pcolor = businessZoneColor] [updateBusinessZone]
+
   ask houses [updateHouse]
   ask businesses [updateBusiness]
   ask powerplants [updatePowerplant]
@@ -96,6 +154,7 @@ to update
 
   ask warnings [updateWarning]
 
+  ifelse showPersons [ask persons [st]][ask persons [ht]]
   ifelse showOffers [ask offers [st]][ask offers [ht]]
   ifelse showElectricity [ask electricities [st]][ask electricities [ht]]
   ifelse showWater [ask waters [st]][ask waters [ht]]
@@ -188,21 +247,21 @@ NIL
 1
 
 SWITCH
-2
-224
-125
+3
+118
+126
+151
+showLabels
+showLabels
+1
+1
+-1000
+
+SWITCH
 257
-showLabels
-showLabels
-1
-1
--1000
-
-SWITCH
-2
-351
-126
-384
+161
+381
+194
 showWater
 showWater
 1
@@ -210,10 +269,10 @@ showWater
 -1000
 
 SWITCH
-2
-308
-126
-341
+257
+118
+381
+151
 showElectricity
 showElectricity
 1
@@ -221,21 +280,21 @@ showElectricity
 -1000
 
 SWITCH
-2
-266
-126
-299
+130
+118
+258
+151
 showOffers
 showOffers
-1
+0
 1
 -1000
 
 PLOT
-230
-235
-430
-385
+232
+349
+432
+499
 Employment
 ticks
 %
@@ -261,10 +320,10 @@ clock
 14
 
 PLOT
-3
-512
-430
-632
+5
+626
+432
+746
 Happiness
 ticks
 happiness
@@ -281,10 +340,10 @@ PENS
 "total" 1.0 0 -14439633 true "" "plot (sum [happiness] of (turtle-set houses businesses)) / (max list 1 count (turtle-set houses businesses))"
 
 PLOT
-3
-388
-430
-508
+5
+502
+432
+622
 Production & Usage
 ticks
 Amount
@@ -362,6 +421,35 @@ NIL
 NIL
 NIL
 1
+
+PLOT
+5
+348
+229
+498
+Economy
+ticks
+amount
+0.0
+100.0
+0.0
+100.0
+true
+true
+"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+PENS
+"money" 1.0 0 -1184463 true "" "plot money"
+
+SWITCH
+129
+159
+257
+192
+showPersons
+showPersons
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -896,21 +984,6 @@ true
 0
 Line -7500403 true 150 0 150 300
 
-line half
-true
-0
-Line -7500403 true 150 0 150 150
-
-molecule water
-false
-0
-Circle -1 true false 183 63 84
-Circle -16777216 false false 183 63 84
-Circle -7500403 true true 75 75 150
-Circle -16777216 false false 75 75 150
-Circle -1 true false 33 63 84
-Circle -16777216 false false 33 63 84
-
 pentagon
 false
 0
@@ -953,22 +1026,6 @@ Polygon -7500403 true true 165 180 165 210 225 180 255 120 210 135
 Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
 Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
 Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
-
-sheep
-false
-15
-Circle -1 true true 203 65 88
-Circle -1 true true 70 65 162
-Circle -1 true true 150 105 120
-Polygon -7500403 true false 218 120 240 165 255 165 278 120
-Circle -7500403 true false 214 72 67
-Rectangle -1 true true 164 223 179 298
-Polygon -1 true true 45 285 30 285 30 240 15 195 45 210
-Circle -1 true true 3 83 150
-Rectangle -1 true true 65 221 80 296
-Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
-Polygon -7500403 true false 276 85 285 105 302 99 294 83
-Polygon -7500403 true false 219 85 210 105 193 99 201 83
 
 spinner
 true

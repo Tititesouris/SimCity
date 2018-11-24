@@ -5,7 +5,7 @@ end
 
 to updateResourceConsumer
   if time mod hourLength = 0 [
-    let :target who
+    let :target self
     let :warnings warnings with [target = :target]
     let :electricityWarnings :warnings with [shape = warningElectricity]
     let :waterWarnings :warnings with [shape = warningWater]
@@ -36,8 +36,8 @@ to updateResourceConsumer
 
   let electricityStorage electricityUsage * 2
   if electricityStored < electricityStorage [
-    let electricitiesAround electricities in-radius 1.5
-    ask electricitiesAround [
+    let :electricitiesAround electricities in-radius 1.5
+    ask :electricitiesAround [
       let :needed [electricityStorage - electricityStored] of myself
       ifelse amount <= :needed [
         ask myself [set electricityStored electricityStored + [amount] of myself]
@@ -51,8 +51,8 @@ to updateResourceConsumer
 
   let waterStorage waterUsage * 2
   if waterStored < waterUsage [
-    let watersAround waters in-radius 1.5
-    ask watersAround [
+    let :watersAround waters in-radius 1.5
+    ask :watersAround [
       let :needed [waterStorage - waterStored] of myself
       ifelse amount <= :needed [
         ask myself [set waterStored waterStored + [amount] of myself]

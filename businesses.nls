@@ -5,9 +5,13 @@ businesses-own [
   waterUsage ; Water usage in L/h
   waterStored ; Current amount of water in the house in L
   happiness ; Happiness of the house
+  entrance ; Patch of road to enter and exit the business
+  created ; Time in ticks when the business was created
   nbJobs ; Total number of jobs available at the business
   employees ; List of all employees working in this business
+  nbEmployees ; Number of employees working in this business
   employeesAtWork ; List of employees currently working
+  nbEmployeesAtWork ; Number of employees currently working
 ]
 
 to loadBusinesses
@@ -25,19 +29,24 @@ end
 to initBusiness [:x :y :nbJobs]
   initResourceConsumer
   set happiness 100
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
+  set created ticks
   setxy :x :y
   set nbJobs :nbJobs
-  set employees no-turtles
-  set employeesAtWork no-turtles
 
   set size 1.2
   set color white
-  face one-of patches in-radius 1 with [pcolor = roadColor]
 end
 
 to updateBusiness
-  set electricityUsage 2 * nbJobs + 1 * (count employeesAtWork)
-  set waterUsage 0.4 * nbJobs + 0.5 * (count employeesAtWork)
+  set employees persons with [employer = myself]
+  set nbEmployees count employees
+  set employeesAtWork persons-here with [employer = myself]
+  set nbEmployeesAtWork count employeesAtWork
+  
+  set electricityUsage 2 * nbJobs + 1 * nbEmployeesAtWork
+  set waterUsage 0.4 * nbJobs + 0.5 * nbEmployeesAtWork
   updateResourceConsumer
   
   updateBusinessWarnings
@@ -51,6 +60,7 @@ to updateBusiness
     ][
       if time = timeLeaveWork [
         endWorkday
+        updateJobs
       ]
     ]
   ]
@@ -60,8 +70,7 @@ end
 
 to updateBusinessWarnings
   if time mod hourLength = 0 [
-    let :target who
-    let :warnings warnings with [target = :target]
+    let :warnings warnings with [target = myself]
     let :workforceWarnings :warnings with [shape = warningWorkforce]
     
     let :x xcor - 0.5 + (0.5 * (count :warnings))
@@ -69,7 +78,7 @@ to updateBusinessWarnings
     let :importanceStart 7 * dayLength
     let :importanceStep 7 * dayLength
     
-    let :nbOpenJobs nbJobs - count employees
+    let :nbOpenJobs nbJobs - nbEmployees
     let :mostRecentlyHired max-one-of employees [startEmployed]
     let :anyLongHirelessPeriod false
     if :mostRecentlyHired != nobody [
@@ -78,7 +87,7 @@ to updateBusinessWarnings
     ]
     ifelse :nbOpenJobs > 0 and :anyLongHirelessPeriod [
       if not any? :workforceWarnings [
-        hatch-warnings 1 [initWarning :x :y warningWorkforce :target :importanceStep]
+        hatch-warnings 1 [initWarning :x :y warningWorkforce myself :importanceStep]
       ]
     ][
       ask :workforceWarnings [die]
@@ -87,50 +96,56 @@ to updateBusinessWarnings
 end
 
 to startWorkday
-  let :recruiter who
-  let :nbOpenJobs nbJobs - (count employees)
+  let :employer self
+  let :nbOpenJobs nbJobs - nbEmployees
   if :nbOpenJobs > 0 [
     let :reach timeLeaveHome - timeReleaseOffers
-    hatch-offers 1 [initOffer xcor ycor :reach :recruiter :nbOpenJobs]
+    ask entrance [
+      sprout-offers 1 [initOffer xcor ycor :reach :employer :nbOpenJobs]
+    ]
   ]
 end
 
 to welcomeEmployees
-  let :employer who
-  let :nbEmployees count employees
-  
-  if count employeesAtWork < nbJobs [
-    let carsAround cars in-radius 1.5
-    ask carsAround [
-      let :employeesInCar passengers with [employer = :employer]
-      ask myself [set employees (turtle-set employees :employeesInCar)]
-      ask myself [set employeesAtWork (turtle-set employeesAtWork :employeesInCar)]
-      carDropOff :employeesInCar
+  let :employer self
+  if nbEmployeesAtWork < nbEmployees [
+    ask entrance [
+      ask cars-here [
+        let :employeesInCar passengers with [employer = :employer]
+        ask :employeesInCar [move-to :employer]
+        carDropOff :employeesInCar
+      ]
     ]
   ]
 end
 
 to endWorkday
-  let :nbEmployeesWorking count employeesAtWork
-  if :nbEmployeesWorking > 0 [
+  if nbEmployeesAtWork > 0 [
     let :reach timeSleep - timeLeaveWork
-    
-    while [count employeesAtWork > 0]
+    let :employeesLeft employeesAtWork
+    while [count :employeesLeft > 0]
     [
-      let :nbPassengers min (list 4 (random (count employeesAtWork) + 1))
+      let :nbPassengers min (list 4 (random (count :employeesLeft) + 1))
       let :passengers n-of :nbPassengers employeesAtWork
-      set employeesAtWork employeesAtWork with [not member? self :passengers]
-      hatch-cars 1 [initCar xcor ycor :reach :passengers]
+      set :employeesLeft :employeesLeft with [not member? self :passengers]
+      ask entrance [
+        sprout-cars 1 [initCar xcor ycor :reach :passengers]
+      ]
     ]
   ]
 end
 
+to updateJobs
+  if ticks - created > nbJobs * dayLength [
+    set nbJobs nbJobs + 1
+  ]
+end
+
 to updateBusinessHappiness
-  let :target who
-  let :warnings warnings with [target = :target]
+  let :warnings warnings with [target = myself]
   set happiness 100 - 10 * (sum [importance] of :warnings)
 end
 
 to-report businessText
-  report (word (count employeesAtWork) "/" (count employees) "/" nbJobs)
+  report (word nbEmployeesAtWork "/" nbEmployees "/" nbJobs)
 end
