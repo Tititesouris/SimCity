@@ -11,7 +11,7 @@ to updateResourceConsumer
     let :waterWarnings :warnings with [shape = warningWater]
 
     let :x xcor - 0.5 + (0.5 * (count :warnings))
-    let :y ycor + 0.75
+    let :y ycor + 0.5
     let :importanceStep 6 * hourLength
 
     ifelse electricityStored > 0 [

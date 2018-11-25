@@ -4,11 +4,24 @@ persons-own [
   employer ; Business this person works for. -1 if unemployed
   startUnemployed ; Tick on which the person started being unemployed
   startEmployed ; Tick on which the person got hired
+  salary ; How much the person is paid every day
 ]
 
 to initPerson [:residence]
   set residence :residence
-  set employer -1
+  set employer nobody
   set startUnemployed ticks
   set startEmployed 0
+  set salary 0
+  
+  set color (30 + random 10)
+end
+
+to updatePerson
+  ifelse employer != nobody [
+    let :nbWeeksEmployed (ticks - startEmployed) / (7 * dayLength)
+    set salary baseSalary * (1 + ln (:nbWeeksEmployed + 1))
+  ][
+    set salary 0
+  ]
 end

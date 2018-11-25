@@ -105,6 +105,15 @@ to loadConfig
   set powerplantPrice file-read
   set pumpPrice file-read
 
+  set houseTax file-read
+  set businessTax file-read
+  set incomeTaxRate file-read
+  set roadUpkeep file-read
+  set powerplantUpkeep file-read
+  set pumpUpkeep file-read
+
+  set baseSalary file-read
+
   set offerSpeed file-read
   set vehicleSpeed file-read
   set resourceSpeed file-read
@@ -114,8 +123,6 @@ to loadConfig
   ask patches [set pcolor terrainColor]
   set highwayColor file-read
   set roadColor file-read
-  set houseColor file-read
-  set businessColor file-read
   set houseZoneColor file-read
   set businessZoneColor file-read
   file-close
@@ -139,6 +146,7 @@ to update
   ask patches with [pcolor = houseZoneColor] [updateHouseZone]
   ask patches with [pcolor = businessZoneColor] [updateBusinessZone]
 
+  ask persons [updatePerson]
   ask houses [updateHouse]
   ask businesses [updateBusiness]
   ask powerplants [updatePowerplant]
@@ -161,21 +169,27 @@ to update
 
   updateBetterlabels
 
+
   tick
   set time time + 1
   if time >= dayLength [
     set time 0
+    updateMoney
   ]
+end
+
+to updateMoney
+  set money money + getTaxes - getUpkeep
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-436
+509
 10
-1448
-633
+1735
+2036
 -1
 -1
-14.99
+20.0
 1
 11
 1
@@ -185,10 +199,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--33
-33
--20
-20
+-30
+30
+-50
+50
 1
 1
 1
@@ -196,47 +210,13 @@ ticks
 30.0
 
 BUTTON
-1
-76
-64
-109
-NIL
-reset
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-95
-10
-184
-43
-Play / Pause
+423
+68
+508
+101
+Play | Pause
 update
 T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-71
-77
-134
-110
-step
-update
-NIL
 1
 T
 OBSERVER
@@ -248,9 +228,9 @@ NIL
 
 SWITCH
 3
-118
+546
 126
-151
+579
 showLabels
 showLabels
 1
@@ -258,10 +238,10 @@ showLabels
 -1000
 
 SWITCH
-132
-197
-256
-230
+3
+682
+126
+715
 showWater
 showWater
 1
@@ -269,10 +249,10 @@ showWater
 -1000
 
 SWITCH
-132
-154
-256
-187
+3
+648
+126
+681
 showElectricity
 showElectricity
 1
@@ -280,38 +260,20 @@ showElectricity
 -1000
 
 SWITCH
-5
-154
-133
-187
+3
+614
+126
+647
 showOffers
 showOffers
-0
+1
 1
 -1000
-
-PLOT
-232
-349
-432
-499
-Employment
-ticks
-%
-0.0
-100.0
-0.0
-100.0
-false
-false
-"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
-PENS
-"employement" 1.0 0 -13840069 true "" "plot 100 * (sum [count residents with [employer != -1]] of houses) / (max (list 1 (sum [count residents] of houses)))"
 
 MONITOR
-369
+163
 10
-434
+228
 67
 Clock
 clock
@@ -320,32 +282,33 @@ clock
 14
 
 PLOT
-5
-626
-432
-746
-Happiness
-ticks
-happiness
+3
+253
+508
+398
+Statistics
+Week
+%
 0.0
 10.0
 0.0
 100.0
 true
 true
-"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+"" "set-plot-x-range (ticks - 7 * dayLength) (ticks + 1)"
 PENS
-"houses" 1.0 0 -1184463 true "" "plot (sum [happiness] of houses) / (max list 1 count houses)"
-"businesses" 1.0 0 -5825686 true "" "plot (sum [happiness] of businesses) / (max list 1 count businesses)"
-"total" 1.0 0 -14439633 true "" "plot (sum [happiness] of (turtle-set houses businesses)) / (max list 1 count (turtle-set houses businesses))"
+"Houses Happiness" 1.0 0 -1184463 true "" "plot getHousesHappiness"
+"Businesses Happiness" 1.0 0 -5825686 true "" "plot getBusinessesHappiness"
+"Total Happiness" 1.0 0 -14439633 true "" "plot getHappiness"
+"Employement" 1.0 0 -8630108 true "" "plot getEmployement"
 
 PLOT
-5
-502
-432
-622
+3
+399
+508
+545
 Production & Usage
-ticks
+Week
 Amount
 0.0
 10.0
@@ -353,17 +316,17 @@ Amount
 10.0
 true
 true
-"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+"" "set-plot-x-range (ticks - 7 * dayLength) (ticks + 1)"
 PENS
-"electricity production" 1.0 0 -1184463 true "" "plot sum [production] of powerplants"
-"electricity usage" 1.0 0 -4079321 true "" "plot sum [electricityUsage] of (turtle-set houses businesses pumps)"
-"water production" 1.0 0 -13791810 true "" "plot sum [production] of pumps"
-"water usage" 1.0 0 -14730904 true "" "plot sum [waterUsage] of (turtle-set houses businesses)"
+"Electricity +" 1.0 0 -1184463 true "" "plot getElectricityProduction"
+"Electricity -" 1.0 0 -4079321 true "" "plot getElectricityUsage"
+"Water +" 1.0 0 -13791810 true "" "plot getWaterProduction"
+"Water -" 1.0 0 -14730904 true "" "plot getWaterUsage"
 
 MONITOR
-207
+3
 10
-368
+164
 67
 Calendar
 calendar
@@ -372,11 +335,11 @@ calendar
 14
 
 BUTTON
-2
-10
-89
-43
-Update GUI
+343
+68
+422
+101
+Enable GUI
 updateGUI
 T
 1
@@ -389,89 +352,107 @@ NIL
 1
 
 BUTTON
-355
-121
-427
-154
-NIL
+3
+68
+68
+101
+Reset
 startup
 NIL
 1
 T
 OBSERVER
 NIL
-NIL
+R
 NIL
 NIL
 1
 
 BUTTON
-215
-118
-350
-151
-Reset & Load save
+133
+68
+227
+101
+Reset & Load
 reset\nloadSave
 NIL
 1
 T
 OBSERVER
 NIL
-NIL
+L
 NIL
 NIL
 1
 
 PLOT
-5
-348
-229
-498
+3
+102
+508
+252
 Economy
-ticks
-amount
+Week
+Money
 0.0
 100.0
 0.0
 100.0
 true
 true
-"" "set-plot-x-range (ticks - dayLength) (ticks + 1)"
+"" "set-plot-x-range (ticks - 7 * dayLength) (ticks + 1)"
 PENS
-"money" 1.0 0 -1184463 true "" "plot money"
+"Income" 1.0 0 -11085214 true "" "plot getTaxes"
+"Upkeep" 1.0 0 -5298144 true "" "plot getUpkeep"
 
 SWITCH
-4
-195
-132
-228
+3
+580
+126
+613
 showPersons
 showPersons
-0
+1
 1
 -1000
 
 MONITOR
-207
-68
-335
-113
+227
+10
+387
+67
 Money
-money
-17
+formatNumber money
+4
 1
-11
+14
 
 MONITOR
-336
-68
-434
-113
+386
+10
+508
+67
 Cost
-getCost
-17
+formatNumber getCost
+4
 1
-11
+14
+
+BUTTON
+69
+68
+132
+101
+Step
+update
+NIL
+1
+T
+OBSERVER
+NIL
+S
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

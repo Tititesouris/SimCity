@@ -12,6 +12,7 @@ to initMovingtruck [:x :y :reach :passengers]
   ask passengers [move-to myself]
 
   set size 1
+  set color (10 * (random 14) + 5)
   face one-of neighbors4 with [pcolor = highwayColor]
 end
 

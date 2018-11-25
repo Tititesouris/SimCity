@@ -14,10 +14,10 @@ to initWarning [:x :y :type :target :importanceStep]
   set importance 1
   set startWarning ticks
 
-  set size 1.5
+  set size 0.75
   set label ""
   set color yellow
-  set heading -40
+  set heading -10
 end
 
 to updateWarning

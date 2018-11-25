@@ -9,6 +9,13 @@
 20 ; Road price
 100000 ; Powerplant price
 80000 ; Pump price
+5 ; House tax
+50 ; Business tax
+0.03 ; Income tax rate
+1 ; Road upkeep
+100 ; Powerplant upkeep
+100 ; Pump upkeep
+50 ; Base salary
 ; Speeds
 0.5 ; Offers
 0.5 ; Cars
@@ -18,7 +25,5 @@
 [160 220 90] ; Terrain
 [75 75 80] ; Highway
 [100 100 105] ; Road
-[255 255 150] ; Houses
-[255 255 255] ; Businesses
-[50 255 50] ; House zones
-[255 50 150] ; Business zones
+[210 170 70] ; House zones
+[180 150 220] ; Business zones

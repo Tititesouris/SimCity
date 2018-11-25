@@ -9,6 +9,9 @@ to initCar [:x :y :reach :passengers]
   initRoamingAgent :x :y vehicleSpeed :reach
   set passengers :passengers
   ask passengers [move-to myself]
+  
+  set size 0.75
+  set color (10 * (random 14) + 5)
 end
 
 to updateCar

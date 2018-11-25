@@ -14,6 +14,8 @@ to initOffer [:x :y :reach :recruiter :nbOpenJobs]
   set nbOpenJobs :nbOpenJobs
   set group who
   set visitedIntersections no-turtles
+  
+  set color businessZoneColor
 end
 
 to acceptOffer [:nbEmploying]

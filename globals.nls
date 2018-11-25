@@ -12,6 +12,15 @@ globals [
   powerplantPrice ; Base price of a powerplant
   pumpPrice ; Base price of a pump
   
+  houseTax ; How much every house has to pay every day
+  businessTax ; How much every business has to pay every day
+  incomeTaxRate ; How much of their salary every employed person pays
+  roadUpkeep ; How much every patch of road costs to maintain every day
+  powerplantUpkeep ; How much every powerplant costs to maintain every day
+  pumpUpkeep ; How much every pump costs to maintain every day
+  
+  baseSalary ; Starting salary earned per day
+  
   offerSpeed ; Speed of offers
   vehicleSpeed ; Speed of vehicles
   resourceSpeed ; Speed of electricity and water
@@ -20,8 +29,6 @@ globals [
   terrainColor ; Color of the terrain
   highwayColor ; Color of the highway
   roadColor ; Color of the road
-  houseColor ; Base color of a house
-  businessColor ; Base color of a business
   houseZoneColor ; Color of a house zone
   businessZoneColor ; Color of a business zone
 
@@ -32,6 +39,25 @@ globals [
   
   gui-ready? ; Whether or not the UI has been setup correctly
 ]
+
+to wiggle [:angle :speed]
+  ifelse ticks mod (2 * :angle) >= :angle [
+    set heading heading - :speed
+  ][
+    set heading heading + :speed
+  ]
+end
+
+to-report formatNumber [:number]
+  let :numberString (word (int :number))
+  let :formattedNumber :numberString
+  let i 0
+  while [i < floor((length :numberString - 1) / 3)] [
+    set :formattedNumber insert-item ((length :numberString) - ((i + 1) * 3)) :formattedNumber " "
+    set i i + 1
+  ]
+  report (word :formattedNumber)
+end
 
 to-report clock
   let :hours floor (time / hourLength)
@@ -69,17 +95,6 @@ to-report calendar
   report (word :month " " :day " " :year)
 end
 
-to-report formatNumber [:number]
-  let :numberString (word :number)
-  let :formattedNumber :numberString
-  let i 0
-  while [i < floor((length :numberString - 1) / 3)] [
-    set :formattedNumber insert-item ((length :numberString) - ((i + 1) * 3)) :formattedNumber " "
-    set i i + 1
-  ]
-  report :formattedNumber
-end
-
 to-report getCost
   let :cursor one-of cursors
   ifelse any? cursors [
@@ -89,10 +104,54 @@ to-report getCost
   ]
 end
 
-to wiggle [:angle :speed]
-  ifelse ticks mod (2 * :angle) >= :angle [
-    set heading heading - :speed
-  ][
-    set heading heading + :speed
-  ]
+to-report getHousesHappiness
+  report (sum [happiness] of houses) / (max list 1 count houses)
+end
+
+to-report getBusinessesHappiness
+  report (sum [happiness] of businesses) / (max list 1 count businesses)
+end
+
+to-report getHappiness
+  report (sum [happiness] of (turtle-set houses businesses)) / (max list 1 count (turtle-set houses businesses))
+end
+
+to-report getEmployement
+  report 100 * (sum [count residents with [employer != nobody]] of houses) / (max (list 1 (sum [nbResidents] of houses)))
+end
+
+to-report getElectricityProduction
+  report sum [production] of powerplants
+end
+
+to-report getElectricityUsage
+  report sum [electricityUsage] of (turtle-set houses businesses pumps)
+end
+
+to-report getWaterProduction
+  report sum [production] of pumps
+end
+
+to-report getWaterUsage
+  report sum [waterUsage] of (turtle-set houses businesses)
+end
+
+to-report getHouseTaxes
+  report houseTax * (count houses)
+end
+
+to-report getBusinessTaxes
+  report businessTax * (count businesses)
+end
+
+to-report getIncomeTaxes
+  report sum [incomeTaxRate * salary] of persons
+end
+
+to-report getTaxes
+  report getHouseTaxes + getBusinessTaxes + getIncomeTaxes
+end
+
+to-report getUpkeep
+  report roadUpkeep * (count (patches with [pcolor = roadColor])) + powerplantUpkeep * (count powerplants) + pumpUpkeep * (count pumps)
 end

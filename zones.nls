@@ -19,7 +19,7 @@ to updateBusinessZone
   if not any? businesses-here [
     let :carAround one-of cars in-radius 1.5
     if :carAround != nobody [
-      let :unemployedPassengers ([passengers] of :carAround) with [employer = -1]
+      let :unemployedPassengers ([passengers] of :carAround) with [employer = nobody]
       if any? :unemployedPassengers [
         sprout-businesses 1 [
           initBusiness xcor ycor (count :unemployedPassengers)

@@ -33,7 +33,7 @@ to initHouse [:x :y :nbRooms]
   set nbRooms :nbRooms
 
   set size 1.5
-  set color houseColor
+  set color (10 * (random 14) + 8)
 end
 
 to updateHouse
@@ -76,11 +76,11 @@ to updateHouseWarnings
     let :employementWarnings :warnings with [shape = warningEmployement]
     
     let :x xcor - 0.5 + (0.5 * (count :warnings))
-    let :y ycor + 0.75
+    let :y ycor + 0.5
     let :importanceStart 3 * dayLength
     let :importanceStep dayLength
     
-    let :longUnemployedResidents residents with [(employer = -1) and ((ticks - startUnemployed) > :importanceStart)]
+    let :longUnemployedResidents residents with [(employer = nobody) and ((ticks - startUnemployed) > :importanceStart)]
     ifelse count :longUnemployedResidents > 0 [
       if not any? :employementWarnings [
         hatch-warnings 1 [initWarning :x :y warningEmployement myself :importanceStep]
@@ -92,7 +92,7 @@ to updateHouseWarnings
 end
 
 to findJob
-  let :unemployedResidents residents with [employer = -1]
+  let :unemployedResidents residents with [employer = nobody]
   let :nbUnemployed count :unemployedResidents
   if :nbUnemployed > 0 [
     let offersAround offers in-radius 1.5
@@ -106,7 +106,7 @@ to findJob
 end
 
 to goWorking
-  let :employedResidentsAtHome residentsAtHome with [employer != -1]
+  let :employedResidentsAtHome residentsAtHome with [employer != nobody]
   let :nbEmployedAtHome count :employedResidentsAtHome
   if :nbEmployedAtHome > 0 [
     let :reach timeSleep - time - hourLength ; Can drive until 1h before going to sleep
@@ -117,7 +117,7 @@ to goWorking
 end
 
 to goVisit
-  let :unemployedResidentsAtHome residentsAtHome with [employer = -1]
+  let :unemployedResidentsAtHome residentsAtHome with [employer = nobody]
   let :nbUnemployedAtHome count :unemployedResidentsAtHome
   if :nbUnemployedAtHome > 0 [
     let :reach timeSleep - time - hourLength ; Can drive until 1h before going to sleep
@@ -150,5 +150,5 @@ to updateHouseHappiness
 end
 
 to-report houseText
-  report (word (count residents with [employer != -1]) "/" nbResidentsAtHome "/" nbResidents)
+  report (word (count residents with [employer != nobody]) "/" nbResidentsAtHome "/" nbResidents)
 end

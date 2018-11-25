@@ -22,7 +22,9 @@ to updateRoamingAgent [:roamingAgentIntersectionBehavior]
         if (:patchAhead = nobody) or ([pcolor] of :patchAhead != roadColor) [
           let :directions no-patches
           ask patch-here [set :directions neighbors4 with [pcolor = roadColor]]
-          face one-of :directions
+          if any? :directions [
+            face one-of :directions
+          ]
         ]
       ]
     ]
