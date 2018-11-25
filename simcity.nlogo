@@ -101,7 +101,7 @@ to loadConfig
   set timeSleep file-read
 
   set money file-read
-  set roadprice file-read
+  set roadPrice file-read
   set powerplantPrice file-read
   set pumpPrice file-read
 
@@ -258,10 +258,10 @@ showLabels
 -1000
 
 SWITCH
-257
-161
-381
-194
+132
+197
+256
+230
 showWater
 showWater
 1
@@ -269,10 +269,10 @@ showWater
 -1000
 
 SWITCH
-257
-118
-381
-151
+132
+154
+256
+187
 showElectricity
 showElectricity
 1
@@ -280,10 +280,10 @@ showElectricity
 -1000
 
 SWITCH
-130
-118
-258
-151
+5
+154
+133
+187
 showOffers
 showOffers
 0
@@ -389,10 +389,10 @@ NIL
 1
 
 BUTTON
-358
-77
-430
-110
+355
+121
+427
+154
 NIL
 startup
 NIL
@@ -406,10 +406,10 @@ NIL
 1
 
 BUTTON
-218
-74
-353
-107
+215
+118
+350
+151
 Reset & Load save
 reset\nloadSave
 NIL
@@ -441,15 +441,37 @@ PENS
 "money" 1.0 0 -1184463 true "" "plot money"
 
 SWITCH
-129
-159
-257
-192
+4
+195
+132
+228
 showPersons
 showPersons
 0
 1
 -1000
+
+MONITOR
+207
+68
+335
+113
+Money
+money
+17
+1
+11
+
+MONITOR
+336
+68
+434
+113
+Cost
+getCost
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?

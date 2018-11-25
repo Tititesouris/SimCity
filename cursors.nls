@@ -9,6 +9,7 @@ cursors-own [
   tools ; Tools available
   activeTool ; Tool currently selected
   selectedPatch ; Patch selected. Different uses based on the active tool
+  cost ; Cost of the thing being done before it is confirmed
 ]
 
 to initCursor
@@ -17,10 +18,10 @@ to initCursor
   set incorrectColor red
   let :noneTool (list [[] -> cursorSelectIntersection] [[] -> doNothing] [[] -> doNothing] [[] -> setCorrectColor])
   let :roadTool (list [[] -> markSelectedPatch] [[] -> cursorRoadClickUp] [[] -> cursorRoadDown] [[] -> cursorRoadUp])
-  let :houseTool (list [[] -> markSelectedPatch] [[] -> cursorHouseClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
-  let :businessTool (list [[] -> markSelectedPatch] [[] -> cursorBusinessClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
-  let :powerplantTool (list [[] -> markSelectedPatch] [[] -> cursorPowerplantClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
-  let :pumpTool (list [[] -> markSelectedPatch] [[] -> cursorPumpClickUp] [[] -> rectangleSelectionNextToRoads] [[] -> setCorrectColor])
+  let :houseTool (list [[] -> markSelectedPatch] [[] -> cursorHouseClickUp] [[] -> rectangleSelectionNextToRoads 0] [[] -> setCorrectColor])
+  let :businessTool (list [[] -> markSelectedPatch] [[] -> cursorBusinessClickUp] [[] -> rectangleSelectionNextToRoads 0] [[] -> setCorrectColor])
+  let :powerplantTool (list [[] -> markSelectedPatch] [[] -> cursorPowerplantClickUp] [[] -> rectangleSelectionNextToRoads powerplantPrice] [[] -> setCorrectColor])
+  let :pumpTool (list [[] -> markSelectedPatch] [[] -> cursorPumpClickUp] [[] -> rectangleSelectionNextToRoads pumpPrice] [[] -> setCorrectColor])
   set tools (list :noneTool :roadTool :houseTool :businessTool :powerplantTool :pumpTool)
   set activeTool 0
   set selectedPatch nobody
@@ -86,7 +87,7 @@ to markSelectedPatch
   ]
 end
 
-to rectangleSelectionNextToRoads
+to rectangleSelectionNextToRoads [:price]
   if selectedPatch != nobody [
     ask planners [die]
     let :patch patch-here
@@ -101,8 +102,8 @@ to rectangleSelectionNextToRoads
       (any? patches with [pcolor = roadColor] in-radius 1) and
       (not any? turtles-here with [not member? breed (list betterlabels cursors)])
     ]
-    
     ask :validPatches [sprout-planners 1 [initPlanners]]
+    set cost :price * (count planners)
   ]
 end
 
@@ -167,6 +168,8 @@ to cursorRoadClickUp
         ]
       ]
     ]
+    set money money - cost
+    set cost 0
     ask planners [die]
     set selectedPatch nobody
   ]
@@ -186,6 +189,7 @@ to cursorRoadDown
     ][
       ask patches with [pxcor = xA and (min list yA yB) <= pycor and pycor <= (max list yA yB)] [sprout-planners 1 [initPlanners]]
     ]
+    set cost roadPrice * (count planners)
   ]
 end
 
@@ -224,6 +228,8 @@ to cursorPowerplantClickUp
     ask planners [
       hatch-powerplants 1 [initPowerplant xcor ycor 100]
     ]
+    set money money - cost
+    set cost 0
     ask planners [die]
     set selectedPatch nobody
   ]
@@ -234,6 +240,8 @@ to cursorPumpClickUp
     ask planners [
       hatch-pumps 1 [initPump xcor ycor 100]
     ]
+    set money money - cost
+    set cost 0
     ask planners [die]
     set selectedPatch nobody
   ]
