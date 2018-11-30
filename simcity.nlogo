@@ -44,6 +44,7 @@ to updateGUI
   if gui-ready? = 0 [ ; For some reason the init doesn't work on startup
     initGUI
   ]
+
   ask cursors [updateCursor]
   display
 end
@@ -128,12 +129,27 @@ to loadConfig
   file-close
 end
 
+to save
+  set-current-directory "./save/"
+  saveRoads
+  saveIntersections
+  saveHouseZones
+  saveHouses
+  saveBusinessZones
+  saveBusinesses
+  savePowerplants
+  savePumps
+  set-current-directory "./../"
+end
+
 ; Load save data from files
 to loadSave
   set-current-directory "./save/"
   loadRoads
   loadIntersections
+  loadHouseZones
   loadHouses
+  loadBusinessZones
   loadBusinesses
   loadPowerplants
   loadPumps
@@ -183,13 +199,13 @@ to updateMoney
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-509
-10
-1735
-2036
+-3
+75
+1445
+642
 -1
 -1
-20.0
+18.0
 1
 11
 1
@@ -199,10 +215,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--30
+0
+79
+0
 30
--50
-50
 1
 1
 1
@@ -210,10 +226,10 @@ ticks
 30.0
 
 BUTTON
-423
-68
-508
-101
+505
+10
+577
+75
 Play | Pause
 update
 T
@@ -227,10 +243,10 @@ NIL
 1
 
 SWITCH
-3
-546
-126
-579
+696
+10
+819
+43
 showLabels
 showLabels
 1
@@ -238,10 +254,10 @@ showLabels
 -1000
 
 SWITCH
-3
-682
-126
-715
+940
+10
+1063
+43
 showWater
 showWater
 1
@@ -249,10 +265,10 @@ showWater
 -1000
 
 SWITCH
-3
-648
-126
-681
+818
+42
+941
+75
 showElectricity
 showElectricity
 1
@@ -260,10 +276,10 @@ showElectricity
 -1000
 
 SWITCH
-3
-614
-126
-647
+818
+10
+941
+43
 showOffers
 showOffers
 1
@@ -271,9 +287,9 @@ showOffers
 -1000
 
 MONITOR
-163
+159
 10
-228
+224
 67
 Clock
 clock
@@ -282,10 +298,10 @@ clock
 14
 
 PLOT
-3
-253
-508
-398
+364
+642
+800
+819
 Statistics
 Week
 %
@@ -303,10 +319,10 @@ PENS
 "Employement" 1.0 0 -8630108 true "" "plot getEmployement"
 
 PLOT
-3
-399
-508
-545
+800
+642
+1285
+819
 Production & Usage
 Week
 Amount
@@ -324,9 +340,9 @@ PENS
 "Water -" 1.0 0 -14730904 true "" "plot getWaterUsage"
 
 MONITOR
-3
+-1
 10
-164
+160
 67
 Calendar
 calendar
@@ -335,27 +351,10 @@ calendar
 14
 
 BUTTON
-343
-68
-422
-101
-Enable GUI
-updateGUI
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-3
-68
-68
-101
+1235
+10
+1290
+43
 Reset
 startup
 NIL
@@ -363,16 +362,16 @@ NIL
 T
 OBSERVER
 NIL
-R
+NIL
 NIL
 NIL
 1
 
 BUTTON
-133
-68
-227
-101
+1368
+10
+1445
+43
 Reset & Load
 reset\nloadSave
 NIL
@@ -380,16 +379,16 @@ NIL
 T
 OBSERVER
 NIL
-L
+NIL
 NIL
 NIL
 1
 
 PLOT
-3
-102
-508
-252
+-1
+642
+364
+819
 Economy
 Week
 Money
@@ -405,10 +404,10 @@ PENS
 "Upkeep" 1.0 0 -5298144 true "" "plot getUpkeep"
 
 SWITCH
-3
-580
-126
-613
+696
+42
+819
+75
 showPersons
 showPersons
 1
@@ -416,9 +415,9 @@ showPersons
 -1000
 
 MONITOR
-227
+223
 10
-387
+383
 67
 Money
 formatNumber money
@@ -427,9 +426,9 @@ formatNumber money
 14
 
 MONITOR
-386
+382
 10
-508
+504
 67
 Cost
 formatNumber getCost
@@ -438,10 +437,10 @@ formatNumber getCost
 14
 
 BUTTON
-69
-68
-132
-101
+639
+10
+694
+75
 Step
 update
 NIL
@@ -450,6 +449,60 @@ T
 OBSERVER
 NIL
 S
+NIL
+NIL
+1
+
+BUTTON
+576
+10
+640
+75
+Use Cursor
+UpdateGUI
+T
+1
+T
+OBSERVER
+NIL
+C
+NIL
+NIL
+1
+
+TEXTBOX
+1129
+59
+1433
+77
+Enable \"Use Cursor\", then choose cursor below
+11
+0.0
+1
+
+TEXTBOX
+544
+12
+580
+30
+Space
+11
+0.0
+1
+
+BUTTON
+1302
+10
+1357
+43
+Save
+save
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
 NIL
 NIL
 1

@@ -18,19 +18,28 @@ to loadHouses
   while [not file-at-end?] [
     let :x file-read
     let :y file-read
-    let :nbResidents file-read
-    create-houses 1 [initHouse :x :y :nbResidents]
+    let :nbRooms file-read
+    create-houses 1 [initHouse :x :y :nbRooms]
+  ]
+  file-close
+end
+
+to saveHouses
+  carefully [file-delete "houses.txt"][]
+  file-open "houses.txt"
+  ask houses [
+    file-print (word pxcor " " pycor " " nbRooms)
   ]
   file-close
 end
 
 to initHouse [:x :y :nbRooms]
+  setxy :x :y
+  set nbRooms :nbRooms
   initResourceConsumer
   set happiness 100
   set entrance one-of neighbors4 with [pcolor = roadColor]
   face entrance
-  setxy :x :y
-  set nbRooms :nbRooms
 
   set size 1.5
   set color (10 * (random 14) + 8)

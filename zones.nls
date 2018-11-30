@@ -1,3 +1,41 @@
+to loadHouseZones
+  file-open "house_zones.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    ask patch :x :y [set pcolor houseZoneColor]
+  ]
+  file-close
+end
+
+to saveHouseZones
+  carefully [file-delete "house_zones.txt"][]
+  file-open "house_zones.txt"
+  ask patches with [pcolor = houseZoneColor] [
+    file-print (word pxcor " " pycor)
+  ]
+  file-close
+end
+
+to loadBusinessZones
+  file-open "business_zones.txt"
+  while [not file-at-end?] [
+    let :x file-read
+    let :y file-read
+    ask patch :x :y [set pcolor businessZoneColor]
+  ]
+  file-close
+end
+
+to saveBusinessZones
+  carefully [file-delete "business_zones.txt"][]
+  file-open "business_zones.txt"
+  ask patches with [pcolor = businessZoneColor] [
+    file-print (word pxcor " " pycor)
+  ]
+  file-close
+end
+
 to updateHouseZone
   if not any? houses-here [
     let :movingtruckAround one-of movingtrucks in-radius 1.5

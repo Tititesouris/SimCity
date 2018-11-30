@@ -15,6 +15,15 @@ to loadPowerplants
   file-close
 end
 
+to savePowerplants
+  carefully [file-delete "powerplants.txt"][]
+  file-open "powerplants.txt"
+  ask powerplants [
+    file-print (word pxcor " " pycor " " production)
+  ]
+  file-close
+end
+
 to initPowerplant [:x :y :production]
   setxy :x :y
   set production :production

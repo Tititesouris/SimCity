@@ -8,11 +8,24 @@ to loadIntersections
   while [not file-at-end?] [
     let :x file-read
     let :y file-read
-    let :north (file-read = 1)
-    let :east (file-read = 1)
-    let :south (file-read = 1)
-    let :west (file-read = 1)
+    let :north file-read
+    let :east file-read
+    let :south file-read
+    let :west file-read
     create-intersections 1 [initIntersection :x :y :north :east :south :west]
+  ]
+  file-close
+end
+
+to saveIntersections
+  carefully [file-delete "intersections.txt"][]
+  file-open "intersections.txt"
+  ask intersections [
+    let :north (member? (patch-at 0 1) directions)
+    let :east (member? (patch-at 1 0) directions)
+    let :south (member? (patch-at 0 -1) directions)
+    let :west (member? (patch-at -1 0) directions)
+    file-print (word pxcor " " pycor " " :north " " :east " " :south " " :west)
   ]
   file-close
 end

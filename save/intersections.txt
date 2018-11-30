@@ -1,7 +1,6 @@
--30 0 1 1 0 0
--20 0 0 1 1 1
-0 0 1 1 0 1
-0 20 0 1 1 0
-0 10 1 1 1 0
-5 20 0 1 1 1
-5 10 1 1 0 1
+0 24 true true true false
+42 5 true false false true
+31 24 false true true true
+18 24 false true true true
+42 24 false false true true
+24 24 false true true true

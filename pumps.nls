@@ -19,6 +19,15 @@ to loadPumps
   file-close
 end
 
+to savePumps
+  carefully [file-delete "pumps.txt"][]
+  file-open "pumps.txt"
+  ask pumps [
+    file-print (word pxcor " " pycor " " production)
+  ]
+  file-close
+end
+
 to initPump [:x :y :production]
   initResourceConsumer
   setxy :x :y

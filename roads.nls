@@ -1,11 +1,18 @@
 to loadRoads
   file-open "roads.txt"
   while [not file-at-end?] [
-    let :xA file-read
-    let :yA file-read
-    let :xB file-read
-    let :yB file-read
-    ask patches with [min list :xA :xB <= pxcor and pxcor <= max list :xA :xB and min list :yA :yB <= pycor and pycor <= max list :yA :yB] [set pcolor roadColor]
+    let :x file-read
+    let :y file-read
+    ask patch :x :y [set pcolor roadColor]
+  ]
+  file-close
+end
+
+to saveRoads
+  carefully [file-delete "roads.txt"][]
+  file-open "roads.txt"
+  ask patches with [pcolor = roadColor] [
+    file-print (word pxcor " " pycor)
   ]
   file-close
 end

@@ -25,15 +25,23 @@ to loadBusinesses
   file-close
 end
 
+to saveBusinesses
+  carefully [file-delete "businesses.txt"][]
+  file-open "businesses.txt"
+  ask businesses [
+    file-print (word pxcor " " pycor " " nbJobs)
+  ]
+  file-close
+end
 
 to initBusiness [:x :y :nbJobs]
+  setxy :x :y
+  set nbJobs :nbJobs
   initResourceConsumer
   set happiness 100
   set entrance one-of neighbors4 with [pcolor = roadColor]
   face entrance
   set created ticks
-  setxy :x :y
-  set nbJobs :nbJobs
 
   set size 1.2
   set color (10 * (random 14) + 8)
@@ -136,7 +144,7 @@ to endWorkday
 end
 
 to updateJobs
-  if nbEmployees >= nbJobs [
+  if nbEmployees >= nbJobs and nbJobs < 10 [
     let :mostRecentlyHired max-one-of employees [startEmployed]
     if :mostRecentlyHired != nobody [
       let :timeSinceLastHire ticks - ([startEmployed] of :mostRecentlyHired)

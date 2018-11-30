@@ -2,10 +2,10 @@ breed [betterlabels betterlabel]
 
 to initBetterlabel [:text]
   set label :text
-  setxy xcor (ycor - 0.75)
+  setxy xcor (ycor - 0.25)
 
   set size 1.5
-  let :rgb (list (255 - item 0 labelColor) (255 - item 1 labelColor) (255 - item 2 labelColor) 100)
+  let :rgb (list (255 - item 0 labelColor) (255 - item 1 labelColor) (255 - item 2 labelColor) 150)
   set color :rgb
   set shape "betterlabel"
   set label-color labelColor
