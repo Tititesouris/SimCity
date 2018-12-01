@@ -16,6 +16,7 @@
 100 ; Powerplant upkeep
 100 ; Pump upkeep
 50 ; Base salary
+25 ; Maximum salary increase
 ; Speeds
 0.5 ; Offers
 0.5 ; Cars

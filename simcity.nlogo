@@ -89,6 +89,7 @@ to loadShapes
   set warningWorkforce "warning workforce"
   set warningElectricity "warning electricity"
   set warningWater "warning water"
+  set warningTaxes "warning taxes"
 end
 
 to loadConfig
@@ -114,6 +115,7 @@ to loadConfig
   set pumpUpkeep file-read
 
   set baseSalary file-read
+  set maxSalaryIncrease file-read
 
   set offerSpeed file-read
   set vehicleSpeed file-read
@@ -239,9 +241,9 @@ NIL
 1
 
 SWITCH
-696
+693
 10
-819
+810
 43
 showLabels
 showLabels
@@ -250,9 +252,9 @@ showLabels
 -1000
 
 SWITCH
-940
+1154
 10
-1063
+1271
 43
 showWater
 showWater
@@ -261,10 +263,10 @@ showWater
 -1000
 
 SWITCH
-818
-42
-941
-75
+1039
+10
+1156
+43
 showElectricity
 showElectricity
 1
@@ -272,9 +274,9 @@ showElectricity
 -1000
 
 SWITCH
-818
+924
 10
-941
+1041
 43
 showOffers
 showOffers
@@ -309,10 +311,11 @@ true
 true
 "" "set-plot-x-range (ticks - 7 * dayLength) (ticks + 1)"
 PENS
-"Houses Happiness" 1.0 0 -1184463 true "" "plot getHousesHappiness"
-"Businesses Happiness" 1.0 0 -5825686 true "" "plot getBusinessesHappiness"
-"Total Happiness" 1.0 0 -14439633 true "" "plot getHappiness"
-"Employement" 1.0 0 -8630108 true "" "plot getEmployement"
+"Houses Happiness" 1.0 0 -682921 true "" "plot getHousesHappiness"
+"Businesses Happiness" 1.0 0 -6192707 true "" "plot getBusinessesHappiness"
+"People Happiness" 1.0 0 -12030287 true "" "plot getPersonsHappiness"
+"Average Happiness" 1.0 0 -14439633 true "" "plot getHappiness"
+"Employement" 1.0 0 -2674135 true "" "plot getEmployement"
 
 PLOT
 800
@@ -347,9 +350,9 @@ calendar
 14
 
 BUTTON
-1235
+1270
 10
-1290
+1325
 43
 Reset
 startup
@@ -364,9 +367,9 @@ NIL
 1
 
 BUTTON
-1368
+1378
 10
-1445
+1455
 43
 Reset & Load
 reset\nloadSave
@@ -400,10 +403,10 @@ PENS
 "Upkeep" 1.0 0 -5298144 true "" "plot getUpkeep"
 
 SWITCH
-696
-42
-819
-75
+809
+10
+926
+43
 showPersons
 showPersons
 1
@@ -467,10 +470,10 @@ NIL
 1
 
 TEXTBOX
-1129
-59
-1433
-77
+1216
+61
+1463
+79
 Enable \"Use Cursor\", then choose cursor below
 11
 0.0
@@ -487,9 +490,9 @@ Space
 1
 
 BUTTON
-1302
+1324
 10
-1357
+1379
 43
 Save
 save
@@ -502,6 +505,51 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+693
+43
+845
+76
+incomeTaxRate
+incomeTaxRate
+0
+1
+0.2
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+844
+43
+1002
+76
+houseTax
+houseTax
+0
+500
+50.0
+5
+1
+$ / day
+HORIZONTAL
+
+SLIDER
+1001
+43
+1173
+76
+businessTax
+businessTax
+0
+1000
+170.0
+10
+1
+$ / day
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -681,6 +729,36 @@ cylinder
 false
 0
 Circle -7500403 true true 0 0 300
+
+dollar bill
+false
+0
+Rectangle -7500403 true true 15 90 285 210
+Rectangle -1 true false 30 105 270 195
+Circle -7500403 true true 120 120 60
+Circle -7500403 true true 120 135 60
+Circle -7500403 true true 254 178 26
+Circle -7500403 true true 248 98 26
+Circle -7500403 true true 18 97 36
+Circle -7500403 true true 21 178 26
+Circle -7500403 true true 66 135 28
+Circle -1 true false 72 141 16
+Circle -7500403 true true 201 138 32
+Circle -1 true false 209 146 16
+Rectangle -16777216 true false 64 112 86 118
+Rectangle -16777216 true false 90 112 124 118
+Rectangle -16777216 true false 128 112 188 118
+Rectangle -16777216 true false 191 112 237 118
+Rectangle -1 true false 106 199 128 205
+Rectangle -1 true false 90 96 209 98
+Rectangle -7500403 true true 60 168 103 176
+Rectangle -7500403 true true 199 127 230 133
+Line -7500403 true 59 184 104 184
+Line -7500403 true 241 189 196 189
+Line -7500403 true 59 189 104 189
+Line -16777216 false 116 124 71 124
+Polygon -1 true false 127 179 142 167 142 160 130 150 126 148 142 132 158 132 173 152 167 156 164 167 174 176 161 193 135 192
+Rectangle -1 true false 134 199 184 205
 
 dot
 false
@@ -1293,6 +1371,36 @@ Line -16777216 false 270 105 150 180
 Line -16777216 false 30 105 150 180
 Line -16777216 false 270 225 181 161
 Line -16777216 false 30 225 119 161
+
+warning taxes
+true
+0
+Rectangle -7500403 true true 15 90 285 210
+Rectangle -1 true false 30 105 270 195
+Circle -7500403 true true 120 120 60
+Circle -7500403 true true 120 135 60
+Circle -7500403 true true 254 178 26
+Circle -7500403 true true 248 98 26
+Circle -7500403 true true 18 97 36
+Circle -7500403 true true 21 178 26
+Circle -7500403 true true 66 135 28
+Circle -1 true false 72 141 16
+Circle -7500403 true true 201 138 32
+Circle -1 true false 209 146 16
+Rectangle -16777216 true false 64 112 86 118
+Rectangle -16777216 true false 90 112 124 118
+Rectangle -16777216 true false 128 112 188 118
+Rectangle -16777216 true false 191 112 237 118
+Rectangle -1 true false 106 199 128 205
+Rectangle -1 true false 90 96 209 98
+Rectangle -7500403 true true 60 168 103 176
+Rectangle -7500403 true true 199 127 230 133
+Line -7500403 true 59 184 104 184
+Line -7500403 true 241 189 196 189
+Line -7500403 true 59 189 104 189
+Line -16777216 false 116 124 71 124
+Polygon -1 true false 127 179 142 167 142 160 130 150 126 148 142 132 158 132 173 152 167 156 164 167 174 176 161 193 135 192
+Rectangle -1 true false 134 199 184 205
 
 warning water
 true

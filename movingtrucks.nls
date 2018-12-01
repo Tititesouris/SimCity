@@ -15,7 +15,6 @@ to initMovingtruck [:x :y :reach :passengers :movingIn]
 
   set size 1
   set color (10 * (random 14) + 5)
-  ifelse movingIn [    set color black  ][set color red]
   face one-of neighbors4 with [pcolor = highwayColor or pcolor = roadColor]
 end
 

@@ -12,14 +12,12 @@ globals [
   powerplantPrice ; Base price of a powerplant
   pumpPrice ; Base price of a pump
   
-  houseTax ; How much every house has to pay every day
-  businessTax ; How much every business has to pay every day
-  incomeTaxRate ; How much of their salary every employed person pays
   roadUpkeep ; How much every patch of road costs to maintain every day
   powerplantUpkeep ; How much every powerplant costs to maintain every day
   pumpUpkeep ; How much every pump costs to maintain every day
   
   baseSalary ; Starting salary earned per day
+  maxSalaryIncrease ; Maximum salary increase
   
   offerSpeed ; Speed of offers
   vehicleSpeed ; Speed of vehicles
@@ -36,9 +34,20 @@ globals [
   warningWorkforce ; Warning sign when the workforce is not satisfying
   warningElectricity ; Warning sign when missing electricity
   warningWater ; Warning sign when missing water
+  warningTaxes ; Warning sign when taxes are too high
   
   gui-ready? ; Whether or not the UI has been setup correctly
 ]
+
+to-report clamp [:value :min :max]
+  if :value < :min [
+    report :min
+  ]
+  if :value > :max [
+    report :max
+  ]
+  report :value
+end
 
 to wiggle [:angle :speed]
   ifelse ticks mod (2 * :angle) >= :angle [
@@ -112,8 +121,12 @@ to-report getBusinessesHappiness
   report (sum [happiness] of businesses) / (max list 1 count businesses)
 end
 
+to-report getPersonsHappiness
+  report (sum [happiness] of persons) / (max list 1 count persons)
+end
+
 to-report getHappiness
-  report (sum [happiness] of (turtle-set houses businesses)) / (max list 1 count (turtle-set houses businesses))
+  report (sum [happiness] of (turtle-set houses businesses persons)) / (max list 1 count (turtle-set houses businesses persons))
 end
 
 to-report getEmployement

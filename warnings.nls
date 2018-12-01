@@ -21,13 +21,12 @@ to initWarning [:x :y :type :target :importanceStep]
 end
 
 to updateWarning
-  ifelse importance = 1 and (ticks - startWarning) > importanceStep [
-    set color orange
-    set importance 2
-  ][
-    if importance = 2 and (ticks - startWarning) > 2 * importanceStep [
+  if (ticks - startWarning) > importance * importanceStep [
+    set importance importance + 1
+    ifelse importance = 2 [
+      set color orange
+    ][
       set color red
-      set importance 3
     ]
   ]
 

@@ -63,12 +63,7 @@ to updateHouseWarnings
   if time mod hourLength = 0 [
     let :warnings warnings with [target = myself]
     
-    if any? :warnings with [(ticks - startWarning) > 3 * importanceStep] [
-      moveOut
-    ]
-    
     let :employementWarnings :warnings with [shape = warningEmployement]
-    
     let :x xcor - 0.5 + (0.5 * (count :warnings))
     let :y ycor + 0.5
     let :importanceStart 3 * dayLength
@@ -78,9 +73,21 @@ to updateHouseWarnings
     ifelse count :longUnemployedResidents > 0 [
       if not any? :employementWarnings [
         hatch-warnings 1 [initWarning :x :y warningEmployement myself :importanceStep]
+        set :x :x + 0.5
       ]
     ][
       ask :employementWarnings [die]
+    ]
+    
+    let :taxesWarnings :warnings with [shape = warningTaxes]
+    set :importanceStep 7 * dayLength
+    
+    ifelse houseTax > sum [salary] of residents [
+      if not any? :taxesWarnings [
+        hatch-warnings 1 [initWarning :x :y warningTaxes myself :importanceStep]
+      ]
+    ][
+      ask :taxesWarnings [die]
     ]
   ]
 end
@@ -160,6 +167,11 @@ end
 to updateHouseHappiness
   let :warnings warnings with [target = myself]
   set happiness 100 - 10 * (sum [importance] of :warnings)
+  set happiness clamp happiness 0 100
+  
+  if happiness < 50 and random dayLength * happiness = 0 [
+    moveOut
+  ]
 end
 
 to-report houseText
