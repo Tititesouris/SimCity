@@ -97,10 +97,9 @@ to rectangleSelectionNextToRoads [:price]
     let yB [pycor] of :patch
     
     let :validPatches patches with [
-      pcolor = terrainColor and
+      pcolor != roadColor and pcolor != highwayColor and
       (min list xA xB) <= pxcor and pxcor <= (max list xA xB) and (min list yA yB) <= pycor and pycor <= (max list yA yB) and
-      (any? patches with [pcolor = roadColor] in-radius 1) and
-      (not any? turtles-here with [not member? breed (list betterlabels cursors)])
+      (any? neighbors4 with [pcolor = roadColor])
     ]
     ask :validPatches [sprout-planners 1 [initPlanners]]
     set cost :price * (count planners)
@@ -151,6 +150,10 @@ to cursorRoadClickUp
   if selectedPatch != nobody [
     if count planners > 1 [
       ask planners [
+        ask houses-here [moveOut]
+        ask businesses-here [closeDown]
+        ask powerplants-here [die]
+        ask pumps-here [die]
         ask patch-here [
           ask intersections-here [die]
           if pcolor != highwayColor [
@@ -204,8 +207,10 @@ end
 to cursorHouseClickUp
   if selectedPatch != nobody [
     ask planners [
-      ;hatch-houses 1 [initHouse xcor ycor 1]
       ask patch-here [set pcolor houseZoneColor]
+      ask businesses-here [closeDown]
+      ask powerplants-here [die]
+      ask pumps-here [die]
     ]
     ask planners [die]
     set selectedPatch nobody
@@ -215,8 +220,10 @@ end
 to cursorBusinessClickUp
   if selectedPatch != nobody [
     ask planners [
-      ;hatch-businesses 1 [initBusiness xcor ycor 10]
       ask patch-here [set pcolor businessZoneColor]
+      ask houses-here [moveOut]
+      ask powerplants-here [die]
+      ask pumps-here [die]
     ]
     ask planners [die]
     set selectedPatch nobody
@@ -226,6 +233,10 @@ end
 to cursorPowerplantClickUp
   if selectedPatch != nobody [
     ask planners [
+      ask patch-here [set pcolor terrainColor]
+      ask houses-here [moveOut]
+      ask businesses-here [closeDown]
+      ask pumps-here [die]
       hatch-powerplants 1 [initPowerplant xcor ycor 100]
     ]
     set money money - cost
@@ -238,6 +249,10 @@ end
 to cursorPumpClickUp
   if selectedPatch != nobody [
     ask planners [
+      ask patch-here [set pcolor terrainColor]
+      ask houses-here [moveOut]
+      ask businesses-here [closeDown]
+      ask powerplants-here [die]
       hatch-pumps 1 [initPump xcor ycor 100]
     ]
     set money money - cost
