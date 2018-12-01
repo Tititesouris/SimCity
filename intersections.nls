@@ -32,35 +32,44 @@ end
 
 to initIntersection [:x :y :north :east :south :west]
   setxy :x :y
-  set heading 0
-  set directions no-patches
-  let :nbDirections 0
   let :direction 0
-  if :north [
-    set directions (patch-set directions (patch-at 0 1))
-    set :nbDirections :nbDirections + 1
-    set :direction 0
-  ]
-  if :east [
-    set directions (patch-set directions (patch-at 1 0))
-    set :nbDirections :nbDirections + 1
-    set :direction 90
-  ]
-  if :south [
-    set directions (patch-set directions (patch-at 0 -1))
-    set :nbDirections :nbDirections + 1
-    if not :west [
-      set :direction 180
+  ifelse (:north and :south and not (:east or :west)) or (:east and :west and not (:north or :south)) [
+    ifelse :north [
+      set directions (patch-set (patch-at 0 -1) (patch-at 0 1))
+    ][
+      set :direction 90
+      set directions (patch-set (patch-at -1 0) (patch-at 1 0))
     ]
-  ]
-  if :west [
-    set directions (patch-set directions (patch-at -1 0))
-    set :nbDirections :nbDirections + 1
-    if not :north [
-      set :direction 270
+    set shape "intersection 2bis"
+  ][
+    set directions no-patches
+    let :nbDirections 0
+    if :north [
+      set directions (patch-set directions (patch-at 0 1))
+      set :nbDirections :nbDirections + 1
+      set :direction 0
     ]
+    if :east [
+      set directions (patch-set directions (patch-at 1 0))
+      set :nbDirections :nbDirections + 1
+      set :direction 90
+    ]
+    if :south [
+      set directions (patch-set directions (patch-at 0 -1))
+      set :nbDirections :nbDirections + 1
+      if not :west [
+        set :direction 180
+      ]
+    ]
+    if :west [
+      set directions (patch-set directions (patch-at -1 0))
+      set :nbDirections :nbDirections + 1
+      if not :north [
+        set :direction 270
+      ]
+    ]
+    set shape word "intersection " :nbDirections
   ]
-  set shape word "intersection " :nbDirections
-  set color black
   set heading :direction
+  set color black
 end

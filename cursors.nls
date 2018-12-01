@@ -16,13 +16,13 @@ to initCursor
   set cursor-was-down? false
   set correctColor green
   set incorrectColor red
-  let :noneTool (list [[] -> cursorSelectIntersection] [[] -> doNothing] [[] -> doNothing] [[] -> setCorrectColor])
   let :roadTool (list [[] -> markSelectedPatch] [[] -> cursorRoadClickUp] [[] -> cursorRoadDown] [[] -> cursorRoadUp])
   let :houseTool (list [[] -> markSelectedPatch] [[] -> cursorHouseClickUp] [[] -> rectangleSelectionNextToRoads 0] [[] -> setCorrectColor])
   let :businessTool (list [[] -> markSelectedPatch] [[] -> cursorBusinessClickUp] [[] -> rectangleSelectionNextToRoads 0] [[] -> setCorrectColor])
   let :powerplantTool (list [[] -> markSelectedPatch] [[] -> cursorPowerplantClickUp] [[] -> rectangleSelectionNextToRoads powerplantPrice] [[] -> setCorrectColor])
   let :pumpTool (list [[] -> markSelectedPatch] [[] -> cursorPumpClickUp] [[] -> rectangleSelectionNextToRoads pumpPrice] [[] -> setCorrectColor])
-  set tools (list :noneTool :roadTool :houseTool :businessTool :powerplantTool :pumpTool)
+  let :intersectionTool (list [[] -> cursorSelectIntersection] [[] -> doNothing] [[] -> doNothing] [[] -> cursorRoadUp])
+  set tools (list :roadTool :houseTool :businessTool :powerplantTool :pumpTool :intersectionTool)
   set activeTool 0
   set selectedPatch nobody
   
@@ -112,12 +112,15 @@ end
 
 to cursorSelectIntersection
   ifelse selectedPatch = nobody [
-    if any? intersections-here [
-      set selectedPatch patch-here
+    set selectedPatch patch-here
+    ifelse any? intersections-here [
       ask ([directions] of (one-of intersections-here)) [
         sprout-planners 1 [initPlanners]
       ]
+    ][
+      ask neighbors4 with [pcolor = roadColor or pcolor = highwayColor] [sprout-planners 1 [initPlanners]]
     ]
+    
   ][
     ifelse patch-here = selectedPatch [
       ask patch-here [
@@ -166,7 +169,9 @@ to cursorRoadClickUp
             let :east (any? planners-at 1 0) or (member? (patch-at 1 0) :roadPatches)
             let :south (any? planners-at 0 -1) or (member? (patch-at 0 -1) :roadPatches)
             let :west (any? planners-at -1 0) or (member? (patch-at -1 0) :roadPatches)
-            sprout-intersections 1 [initIntersection pxcor pycor :north :east :south :west]
+            if not ((:north and :south and not (:east or :west)) or (:east and :west and not (:north or :south))) [
+              sprout-intersections 1 [initIntersection pxcor pycor :north :east :south :west]
+            ]
           ]
         ]
       ]
