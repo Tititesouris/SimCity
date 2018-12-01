@@ -38,7 +38,7 @@ end
 
 to updateHouseZone
   if not any? houses-here [
-    let :movingtruckAround one-of movingtrucks in-radius 1.5
+    let :movingtruckAround one-of movingtrucks in-radius 1.5 with [movingIn]
     if :movingtruckAround != nobody [
       let :passengers [passengers] of :movingtruckAround
       sprout-houses 1 [

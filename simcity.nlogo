@@ -134,9 +134,7 @@ to save
   saveRoads
   saveIntersections
   saveHouseZones
-  saveHouses
   saveBusinessZones
-  saveBusinesses
   savePowerplants
   savePumps
   set-current-directory "./../"
@@ -148,9 +146,7 @@ to loadSave
   loadRoads
   loadIntersections
   loadHouseZones
-  loadHouses
   loadBusinessZones
-  loadBusinesses
   loadPowerplants
   loadPumps
   set-current-directory "./../"
@@ -249,7 +245,7 @@ SWITCH
 43
 showLabels
 showLabels
-1
+0
 1
 -1000
 

@@ -9,30 +9,9 @@ businesses-own [
   created ; Time in ticks when the business was created
   nbJobs ; Total number of jobs available at the business
   employees ; List of all employees working in this business
-  nbEmployees ; Number of employees working in this business
   employeesAtWork ; List of employees currently working
   nbEmployeesAtWork ; Number of employees currently working
 ]
-
-to loadBusinesses
-  file-open "businesses.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :nbJobs file-read
-    create-businesses 1 [initBusiness :x :y :nbJobs]
-  ]
-  file-close
-end
-
-to saveBusinesses
-  carefully [file-delete "businesses.txt"][]
-  file-open "businesses.txt"
-  ask businesses [
-    file-print (word pxcor " " pycor " " nbJobs)
-  ]
-  file-close
-end
 
 to initBusiness [:x :y :nbJobs]
   setxy :x :y
@@ -49,9 +28,10 @@ end
 
 to updateBusiness
   set employees persons with [employer = myself]
-  set nbEmployees count employees
   set employeesAtWork persons-here with [employer = myself]
   set nbEmployeesAtWork count employeesAtWork
+  
+  checkDestroyBusiness
   
   set electricityUsage 2 * nbJobs + 1 * nbEmployeesAtWork
   set waterUsage 0.4 * nbJobs + 0.5 * nbEmployeesAtWork
@@ -81,12 +61,16 @@ to updateBusinessWarnings
     let :warnings warnings with [target = myself]
     let :workforceWarnings :warnings with [shape = warningWorkforce]
     
+    if any? :warnings with [(ticks - startWarning) > 3 * importanceStep] [
+      closeDown
+    ]
+    
     let :x xcor - 0.5 + (0.5 * (count :warnings))
     let :y ycor + 0.5
     let :importanceStart 7 * dayLength
     let :importanceStep 7 * dayLength
     
-    let :nbOpenJobs nbJobs - nbEmployees
+    let :nbOpenJobs nbJobs - (count employees)
     let :mostRecentlyHired max-one-of employees [startEmployed]
     let :anyLongHirelessPeriod false
     if :mostRecentlyHired != nobody [
@@ -105,7 +89,7 @@ end
 
 to startWorkday
   let :employer self
-  let :nbOpenJobs nbJobs - nbEmployees
+  let :nbOpenJobs nbJobs - (count employees)
   if :nbOpenJobs > 0 [
     let :reach timeLeaveHome - timeReleaseOffers
     ask entrance [
@@ -116,7 +100,7 @@ end
 
 to welcomeEmployees
   let :employer self
-  if nbEmployeesAtWork < nbEmployees [
+  if nbEmployeesAtWork < count employees [
     ask entrance [
       ask cars-here [
         let :employeesInCar passengers with [employer = :employer]
@@ -144,7 +128,7 @@ to endWorkday
 end
 
 to updateJobs
-  if nbEmployees >= nbJobs and nbJobs < 10 [
+  if count employees >= nbJobs and nbJobs < 10 [
     let :mostRecentlyHired max-one-of employees [startEmployed]
     if :mostRecentlyHired != nobody [
       let :timeSinceLastHire ticks - ([startEmployed] of :mostRecentlyHired)
@@ -155,11 +139,26 @@ to updateJobs
   ]
 end
 
+to closeDown
+  if any? employees [
+    endWorkday
+    ask employees [set employer nobody]
+  ]
+  ask warnings with [target = myself] [die]
+  die
+end
+
+to checkDestroyBusiness
+  if ([pcolor] of patch-here != businessZoneColor) or ([pcolor] of entrance != roadColor) or (not any? employees) [
+    closeDown
+  ]
+end
+
 to updateBusinessHappiness
   let :warnings warnings with [target = myself]
   set happiness 100 - 10 * (sum [importance] of :warnings)
 end
 
 to-report businessText
-  report (word nbEmployeesAtWork "/" nbEmployees "/" nbJobs)
+  report (word nbEmployeesAtWork "/" (count employees) "/" nbJobs)
 end

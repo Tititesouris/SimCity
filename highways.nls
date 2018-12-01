@@ -31,8 +31,10 @@ to updateHighway
     hatch-persons :nbPassengers [initPerson myself]
     let :passengers persons with [residence = myself]
     ask :passengers [set residence nobody]
-    hatch-movingtrucks 1 [initMovingtruck xcor ycor dayLength :passengers]
+    hatch-movingtrucks 1 [initMovingtruck xcor ycor dayLength :passengers true]
     
     set lastMovingtruck ticks
   ]
+  
+  ask movingtrucks-here with [movingIn = false] [leaveCity]
 end

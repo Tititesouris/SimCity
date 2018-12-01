@@ -8,30 +8,9 @@ houses-own [
   entrance ; Patch of road to enter and exit the house
   nbRooms ; Number of people the house can host
   residents ; List of people living in the house
-  nbResidents ; Number of people living in the house
   residentsAtHome ; List of people currently in the house
   nbResidentsAtHome ; Number of people currently in the house
 ]
-
-to loadHouses
-  file-open "houses.txt"
-  while [not file-at-end?] [
-    let :x file-read
-    let :y file-read
-    let :nbRooms file-read
-    create-houses 1 [initHouse :x :y :nbRooms]
-  ]
-  file-close
-end
-
-to saveHouses
-  carefully [file-delete "houses.txt"][]
-  file-open "houses.txt"
-  ask houses [
-    file-print (word pxcor " " pycor " " nbRooms)
-  ]
-  file-close
-end
 
 to initHouse [:x :y :nbRooms]
   setxy :x :y
@@ -47,17 +26,18 @@ end
 
 to updateHouse
   set residents persons with [residence = myself]
-  set nbResidents count residents
   set residentsAtHome persons-here with [residence = myself]
   set nbResidentsAtHome count residentsAtHome
   
-  set electricityUsage 0.25 * nbResidents + 0.5 * nbResidentsAtHome
-  set waterUsage 0.2 * nbResidents + 1 * nbResidentsAtHome
-  updateResourceConsumer
+  checkDestroyHouse
   
   updateHouseWarnings
   
-  if nbResidents > 0 [
+  set electricityUsage 0.25 * (count residents) + 0.5 * nbResidentsAtHome
+  set waterUsage 0.2 * (count residents) + 1 * nbResidentsAtHome
+  updateResourceConsumer
+  
+  if count residents > 0 [
     ifelse timeReleaseOffers <= time and time < timeLeaveHome [
       findJob
     ][
@@ -82,6 +62,11 @@ end
 to updateHouseWarnings
   if time mod hourLength = 0 [
     let :warnings warnings with [target = myself]
+    
+    if any? :warnings with [(ticks - startWarning) > 3 * importanceStep] [
+      moveOut
+    ]
+    
     let :employementWarnings :warnings with [shape = warningEmployement]
     
     let :x xcor - 0.5 + (0.5 * (count :warnings))
@@ -138,7 +123,7 @@ end
 
 to getHome
   let :residence self
-  if nbResidentsAtHome < nbResidents [
+  if nbResidentsAtHome < count residents [
     ask entrance [
       ask cars-here [
         let :droppedOffPassengers passengers with [residence = :residence]
@@ -153,11 +138,30 @@ to goSleep
   ask residents [move-to myself]
 end
 
+to moveOut
+  if any? residents [
+    let :residents residents
+    ask cars with [any? passengers with [member? self :residents]] [carDropOff :residents]
+    ask entrance [
+      sprout-movingtrucks 1 [initMovingtruck xcor ycor dayLength :residents false]
+    ]
+    ask residents [set residence nobody set employer nobody]
+  ]
+  ask warnings with [target = myself] [die]
+  die
+end
+
+to checkDestroyHouse
+  if ([pcolor] of patch-here != houseZoneColor) or ([pcolor] of entrance != roadColor) or (not any? residents) [
+    moveOut
+  ]
+end
+
 to updateHouseHappiness
   let :warnings warnings with [target = myself]
   set happiness 100 - 10 * (sum [importance] of :warnings)
 end
 
 to-report houseText
-  report (word (count residents with [employer != nobody]) "/" nbResidentsAtHome "/" nbResidents)
+  report (word (count residents with [employer != nobody]) "/" nbResidentsAtHome "/" (count residents))
 end

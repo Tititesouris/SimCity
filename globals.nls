@@ -117,7 +117,7 @@ to-report getHappiness
 end
 
 to-report getEmployement
-  report 100 * (sum [count residents with [employer != nobody]] of houses) / (max (list 1 (sum [nbResidents] of houses)))
+  report 100 * (sum [count residents with [employer != nobody]] of houses) / (max (list 1 (sum [count residents] of houses)))
 end
 
 to-report getElectricityProduction

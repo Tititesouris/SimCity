@@ -27,7 +27,7 @@ to updateWarning
   ][
     if importance = 2 and (ticks - startWarning) > 2 * importanceStep [
       set color red
-     set importance 3
+      set importance 3
     ]
   ]
 

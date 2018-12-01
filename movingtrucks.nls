@@ -3,17 +3,20 @@ movingtrucks-own [
   speed ; Movement speed of the moving truck
   reach ; Number of ticks the moving truck can still drive for
   passengers ; List of persons in the moving truck
+  movingIn ; If true, the moving truck is moving in. If false, it is moving out.
 ]
 
-to initMovingtruck [:x :y :reach :passengers]
+to initMovingtruck [:x :y :reach :passengers :movingIn]
   set speed vehicleSpeed
   set reach :reach
   set passengers :passengers
   ask passengers [move-to myself]
+  set movingIn :movingIn
 
   set size 1
   set color (10 * (random 14) + 5)
-  face one-of neighbors4 with [pcolor = highwayColor]
+  ifelse movingIn [    set color black  ][set color red]
+  face one-of neighbors4 with [pcolor = highwayColor or pcolor = roadColor]
 end
 
 to updateMovingtruck
@@ -47,6 +50,11 @@ to movingtruckDropOff [:droppedOffPassengers]
   if count passengers <= 0 [
     die
   ]
+end
+
+to leaveCity
+  ask passengers [die]
+  die
 end
 
 to-report movingtruckText
