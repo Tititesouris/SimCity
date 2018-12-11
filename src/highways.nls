@@ -1,0 +1,41 @@
+breed [highways highway]
+highways-own [
+  lastMovingtruck
+]
+
+to loadHighways
+  file-open "highways.txt"
+  while [not file-at-end?] [
+    let :xA file-read
+    let :yA file-read
+    let :xB file-read
+    let :yB file-read
+    ask patches with [min list :xA :xB <= pxcor and pxcor <= max list :xA :xB and min list :yA :yB <= pycor and pycor <= max list :yA :yB] [set pcolor highwayColor]
+    
+    create-highways 1 [initHighway :xA :yA face patch :xB :yB]
+    create-highways 1 [initHighway :xB :yB face patch :xA :yA]
+  ]
+  file-close
+end
+
+to initHighway [:x :y]
+  setxy :x :y
+  set lastMovingtruck 0 - dayLength
+  
+  set color white
+end
+
+to updateHighway
+  let :attractiveness (18 * hourLength) * (getHappiness / 100)
+  if ticks - lastMovingtruck > dayLength - :attractiveness [
+    let :nbPassengers (random 4) + 1
+    hatch-persons :nbPassengers [initPerson myself]
+    let :passengers persons with [residence = myself]
+    ask :passengers [set residence nobody]
+    hatch-movingtrucks 1 [initMovingtruck xcor ycor dayLength :passengers true]
+    
+    set lastMovingtruck ticks
+  ]
+  
+  ask movingtrucks-here with [movingIn = false] [leaveCity]
+end

@@ -1,0 +1,32 @@
+breed [electricities electricity]
+electricities-own [
+  speed ; Movement speed
+  reach ; Number of ticks the electricity is still active for
+  amount ; Amount of electricity in kW
+  group ; ID of the group this electricity belongs to
+  visitedIntersections ; Intersections visited by this electricity
+]
+
+breed [waters water]
+waters-own [
+  speed ; Movement speed
+  reach ; Number of ticks the water is still active for
+  amount ; Amount of water in L
+  group ; ID of the group this water belongs to
+  visitedIntersections ; Intersections visited by this water
+]
+
+to initResource [:x :y :reach :amount]
+  initRoamingAgent :x :y resourceSpeed :reach
+  set amount :amount
+  set group who
+  set visitedIntersections no-turtles
+end
+
+to updateResource
+  updateRoamingAgent [[:intersection] -> (cloneIntersectionBehavior :intersection)]
+end
+
+to-report resourceText
+  report amount
+end

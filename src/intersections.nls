@@ -1,0 +1,77 @@
+breed [intersections intersection]
+intersections-own [
+  directions
+]
+
+to loadIntersections
+  carefully [
+    file-open "intersections.txt"
+    while [not file-at-end?] [
+      let :x file-read
+      let :y file-read
+      let :north file-read
+      let :east file-read
+      let :south file-read
+      let :west file-read
+      create-intersections 1 [initIntersection :x :y :north :east :south :west]
+    ]
+    file-close
+  ][]
+end
+
+to saveIntersections
+  carefully [file-delete "intersections.txt"][]
+  file-open "intersections.txt"
+  ask intersections [
+    let :north (member? (patch-at 0 1) directions)
+    let :east (member? (patch-at 1 0) directions)
+    let :south (member? (patch-at 0 -1) directions)
+    let :west (member? (patch-at -1 0) directions)
+    file-print (word pxcor " " pycor " " :north " " :east " " :south " " :west)
+  ]
+  file-close
+end
+
+to initIntersection [:x :y :north :east :south :west]
+  setxy :x :y
+  let :direction 0
+  ifelse (:north and :south and not (:east or :west)) or (:east and :west and not (:north or :south)) [
+    ifelse :north [
+      set directions (patch-set (patch-at 0 -1) (patch-at 0 1))
+    ][
+      set :direction 90
+      set directions (patch-set (patch-at -1 0) (patch-at 1 0))
+    ]
+    set shape "intersection 2bis"
+  ][
+    set directions no-patches
+    let :nbDirections 0
+    if :north [
+      set directions (patch-set directions (patch-at 0 1))
+      set :nbDirections :nbDirections + 1
+      set :direction 0
+    ]
+    if :east [
+      set directions (patch-set directions (patch-at 1 0))
+      set :nbDirections :nbDirections + 1
+      set :direction 90
+    ]
+    if :south [
+      set directions (patch-set directions (patch-at 0 -1))
+      set :nbDirections :nbDirections + 1
+      if not :west [
+        set :direction 180
+      ]
+    ]
+    if :west [
+      set directions (patch-set directions (patch-at -1 0))
+      set :nbDirections :nbDirections + 1
+      if not :north [
+        set :direction 270
+      ]
+    ]
+    set shape word "intersection " :nbDirections
+  ]
+  set heading :direction
+  set color black
+end

@@ -1,0 +1,50 @@
+breed [powerplants powerplant]
+powerplants-own [
+  production ; Amount of electricity produced in Wh
+  entrance ; Patch of road to enter and exit the powerplant
+]
+
+to loadPowerplants
+  carefully [
+    file-open "powerplants.txt"
+    while [not file-at-end?] [
+      let :x file-read
+      let :y file-read
+      let :production file-read
+      create-powerplants 1 [initPowerplant :x :y :production]
+    ]
+    file-close
+  ][]
+end
+
+to savePowerplants
+  carefully [file-delete "powerplants.txt"][]
+  file-open "powerplants.txt"
+  ask powerplants [
+    file-print (word pxcor " " pycor " " production)
+  ]
+  file-close
+end
+
+to initPowerplant [:x :y :production]
+  setxy :x :y
+  set production :production
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
+
+  set size 1.2
+  set color yellow
+end
+
+to updatePowerplant
+  if time mod hourLength = 0 [
+    let :amount production
+    ask entrance [
+      sprout-electricities 1 [initResource xcor ycor (3 * hourLength) :amount set color yellow]
+    ]
+  ]
+end
+
+to-report powerplantText
+  report production
+end

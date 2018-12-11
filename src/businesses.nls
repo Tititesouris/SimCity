@@ -1,0 +1,177 @@
+breed [businesses business]
+businesses-own [
+  electricityUsage ; Electricity usage in Wh
+  electricityStored ; Current amount of electricity in W
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in L
+  happiness ; Happiness of the business
+  entrance ; Patch of road to enter and exit the business
+  created ; Time in ticks when the business was created
+  nbJobs ; Total number of jobs available at this business
+  employees ; List of all employees working in this business
+  employeesAtWork ; List of employees currently working
+  nbEmployeesAtWork ; Number of employees currently working
+]
+
+to initBusiness [:x :y :nbJobs]
+  setxy :x :y
+  set nbJobs :nbJobs
+  initResourceConsumer
+  set happiness 100
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
+  set created ticks
+
+  set size 1.2
+  set color (10 * (random 14) + 8)
+end
+
+to updateBusiness
+  set employees persons with [employer = myself]
+  set employeesAtWork persons-here with [employer = myself]
+  set nbEmployeesAtWork count employeesAtWork
+  
+  checkDestroyBusiness
+  
+  set electricityUsage 2 * nbJobs + 1 * nbEmployeesAtWork
+  set waterUsage 0.4 * nbJobs + 0.5 * nbEmployeesAtWork
+  updateResourceConsumer
+  
+  updateBusinessWarnings
+  
+  ; Working hours
+  ifelse timeReleaseOffers < time and time < timeLeaveWork [
+    welcomeEmployees
+  ][
+    ifelse time = timeReleaseOffers [
+      startWorkday
+    ][
+      if time = timeLeaveWork [
+        endWorkday
+        updateJobs
+      ]
+    ]
+  ]
+  
+  updateBusinessHappiness
+end
+
+to updateBusinessWarnings
+  if time mod hourLength = 0 [
+    let :warnings warnings with [target = myself]
+    
+    let :workforceWarnings :warnings with [shape = warningWorkforce]
+    let :x xcor - 0.5 + (0.5 * (count :warnings))
+    let :y ycor + 0.5
+    let :importanceStart 7 * dayLength
+    let :importanceStep 7 * dayLength
+    
+    let :nbOpenJobs nbJobs - (count employees)
+    let :mostRecentlyHired max-one-of employees [startEmployed]
+    let :anyLongHirelessPeriod false
+    if :mostRecentlyHired != nobody [
+      let :timeWithoutHiring ticks - ([startEmployed] of :mostRecentlyHired)
+      set :anyLongHirelessPeriod :timeWithoutHiring > :importanceStart
+    ]
+    ifelse :nbOpenJobs > 0 and :anyLongHirelessPeriod [
+      if not any? :workforceWarnings [
+        hatch-warnings 1 [initWarning :x :y warningWorkforce myself :importanceStep]
+        set :x :x + 0.5
+      ]
+    ][
+      ask :workforceWarnings [die]
+    ]
+    
+    let :taxesWarnings :warnings with [shape = warningTaxes]
+    set :importanceStep 6 * hourLength
+    
+    ifelse businessTax > sum [salary] of employees [
+      if not any? :taxesWarnings [
+        hatch-warnings 1 [initWarning :x :y warningTaxes myself :importanceStep]
+      ]
+    ][
+      ask :taxesWarnings [die]
+    ]
+  ]
+end
+
+to startWorkday
+  let :employer self
+  let :nbOpenJobs nbJobs - (count employees)
+  if :nbOpenJobs > 0 [
+    let :reach timeLeaveHome - timeReleaseOffers
+    ask entrance [
+      sprout-offers 1 [initOffer xcor ycor :reach :employer :nbOpenJobs]
+    ]
+  ]
+end
+
+to welcomeEmployees
+  let :employer self
+  if nbEmployeesAtWork < count employees [
+    ask entrance [
+      ask cars-here [
+        let :employeesInCar passengers with [employer = :employer]
+        ask :employeesInCar [move-to :employer]
+        carDropOff :employeesInCar
+      ]
+    ]
+  ]
+end
+
+to endWorkday
+  if nbEmployeesAtWork > 0 [
+    let :reach timeSleep - timeLeaveWork
+    let :employeesLeft employeesAtWork
+    while [count :employeesLeft > 0]
+    [
+      let :nbPassengers min (list 4 (random (count :employeesLeft) + 1))
+      let :passengers n-of :nbPassengers :employeesLeft
+      set :employeesLeft :employeesLeft with [not member? self :passengers]
+      ask entrance [
+        sprout-cars 1 [initCar xcor ycor :reach :passengers]
+      ]
+    ]
+  ]
+end
+
+to updateJobs
+  if count employees >= nbJobs and nbJobs < 10 [
+    let :mostRecentlyHired max-one-of employees [startEmployed]
+    if :mostRecentlyHired != nobody [
+      let :timeSinceLastHire ticks - ([startEmployed] of :mostRecentlyHired)
+      if :timeSinceLastHire / dayLength > nbJobs [
+        set nbJobs nbJobs + 1
+      ]
+    ]
+  ]
+end
+
+to closeDown
+  if any? employees [
+    endWorkday
+    ask employees [set employer nobody]
+  ]
+  ask warnings with [target = myself] [die]
+  die
+end
+
+to checkDestroyBusiness
+  if ([pcolor] of patch-here != businessZoneColor) or ([pcolor] of entrance != roadColor) or (not any? employees) [
+    closeDown
+  ]
+end
+
+to updateBusinessHappiness
+  let :warnings warnings with [target = myself]
+  set happiness 100 - 10 * (sum [importance] of :warnings)
+  set happiness clamp happiness 0 100
+  
+  if happiness < 50 and random dayLength * happiness = 0 [
+    closeDown
+  ]
+end
+
+to-report businessText
+  report (word nbEmployeesAtWork "/" (count employees) "/" nbJobs)
+end

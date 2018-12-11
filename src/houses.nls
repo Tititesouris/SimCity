@@ -1,0 +1,179 @@
+breed [houses house]
+houses-own [
+  electricityUsage ; Electricity usage in Wh
+  electricityStored ; Current amount of electricity in W
+  waterUsage ; Water usage in L/h
+  waterStored ; Current amount of water in L
+  happiness ; Happiness of the household
+  entrance ; Patch of road to enter and exit the house
+  nbRooms ; Number of people the house can host
+  residents ; List of people living in the house
+  residentsAtHome ; List of people currently in the house
+  nbResidentsAtHome ; Number of people currently in the house
+]
+
+to initHouse [:x :y :nbRooms]
+  setxy :x :y
+  set nbRooms :nbRooms
+  initResourceConsumer
+  set happiness 100
+  set entrance one-of neighbors4 with [pcolor = roadColor]
+  face entrance
+
+  set size 1.5
+  set color (10 * (random 14) + 8)
+end
+
+to updateHouse
+  set residents persons with [residence = myself]
+  set residentsAtHome persons-here with [residence = myself]
+  set nbResidentsAtHome count residentsAtHome
+  
+  checkDestroyHouse
+  
+  updateHouseWarnings
+  
+  set electricityUsage 0.25 * (count residents) + 0.5 * nbResidentsAtHome
+  set waterUsage 0.2 * (count residents) + 1 * nbResidentsAtHome
+  updateResourceConsumer
+  
+  if count residents > 0 [
+    ifelse timeReleaseOffers <= time and time < timeLeaveHome [
+      findJob
+    ][
+      ifelse time = timeLeaveHome [
+        goWorking
+        goVisit
+      ][
+        ifelse timeLeaveWork <= time and time < timeSleep [
+          getHome
+        ][
+          if time >= timeSleep [
+            goSleep
+          ]
+        ]
+      ]
+    ]
+  ]
+  
+  updateHouseHappiness
+end
+
+to updateHouseWarnings
+  if time mod hourLength = 0 [
+    let :warnings warnings with [target = myself]
+    
+    let :employementWarnings :warnings with [shape = warningEmployement]
+    let :x xcor - 0.5 + (0.5 * (count :warnings))
+    let :y ycor + 0.5
+    let :importanceStart 3 * dayLength
+    let :importanceStep dayLength
+    
+    let :longUnemployedResidents residents with [(employer = nobody) and ((ticks - startUnemployed) > :importanceStart)]
+    ifelse count :longUnemployedResidents > 0 [
+      if not any? :employementWarnings [
+        hatch-warnings 1 [initWarning :x :y warningEmployement myself :importanceStep]
+        set :x :x + 0.5
+      ]
+    ][
+      ask :employementWarnings [die]
+    ]
+    
+    let :taxesWarnings :warnings with [shape = warningTaxes]
+    set :importanceStep dayLength
+    
+    ifelse houseTax > sum [salary] of residents [
+      if not any? :taxesWarnings [
+        hatch-warnings 1 [initWarning :x :y warningTaxes myself :importanceStep]
+      ]
+    ][
+      ask :taxesWarnings [die]
+    ]
+  ]
+end
+
+to findJob
+  let :unemployedResidents residents with [employer = nobody]
+  let :nbUnemployed count :unemployedResidents
+  if :nbUnemployed > 0 [
+    let offersAround offers in-radius 1.5
+    ask offersAround [
+      let :nbEmploying (min list nbOpenJobs :nbUnemployed)
+      let :recruiter recruiter
+      ask n-of :nbEmploying :unemployedResidents [set employer :recruiter set startEmployed ticks]
+      acceptOffer :nbEmploying
+    ]
+  ]
+end
+
+to goWorking
+  let :employedResidentsAtHome residentsAtHome with [employer != nobody]
+  let :nbEmployedAtHome count :employedResidentsAtHome
+  if :nbEmployedAtHome > 0 [
+    let :reach timeSleep - time - hourLength ; Can drive until 1h before going to sleep
+    ask entrance [
+      sprout-cars 1 [initCar xcor ycor :reach :employedResidentsAtHome]
+    ]
+  ]
+end
+
+to goVisit
+  let :unemployedResidentsAtHome residentsAtHome with [employer = nobody]
+  let :nbUnemployedAtHome count :unemployedResidentsAtHome
+  if :nbUnemployedAtHome > 0 [
+    let :reach timeSleep - time - hourLength ; Can drive until 1h before going to sleep
+    ask entrance [
+      sprout-cars 1 [initCar xcor ycor :reach :unemployedResidentsAtHome]
+    ]
+  ]
+end
+
+to getHome
+  let :residence self
+  if nbResidentsAtHome < count residents [
+    ask entrance [
+      ask cars-here [
+        let :droppedOffPassengers passengers with [residence = :residence]
+        ask :droppedOffPassengers [move-to :residence]
+        carDropOff :droppedOffPassengers
+      ]
+    ]
+  ]
+end
+
+to goSleep
+  ask residents [move-to myself]
+end
+
+to moveOut
+  if any? residents [
+    let :residents residents
+    ask cars with [any? passengers with [member? self :residents]] [carDropOff :residents]
+    ask entrance [
+      sprout-movingtrucks 1 [initMovingtruck xcor ycor dayLength :residents false]
+    ]
+    ask residents [set residence nobody set employer nobody]
+  ]
+  ask warnings with [target = myself] [die]
+  die
+end
+
+to checkDestroyHouse
+  if ([pcolor] of patch-here != houseZoneColor) or ([pcolor] of entrance != roadColor) or (not any? residents) [
+    moveOut
+  ]
+end
+
+to updateHouseHappiness
+  let :warnings warnings with [target = myself]
+  set happiness 100 - 10 * (sum [importance] of :warnings)
+  set happiness clamp happiness 0 100
+  
+  if happiness < 50 and random dayLength * happiness = 0 [
+    moveOut
+  ]
+end
+
+to-report houseText
+  report (word (count residents with [employer != nobody]) "/" nbResidentsAtHome "/" (count residents))
+end

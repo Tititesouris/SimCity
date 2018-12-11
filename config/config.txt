@@ -1,14 +1,14 @@
 ; Times
 2400 ; Number of ticks in a day
 100 ; Job offers release
-700 ; Going to work
+700 ; Going out
 1800 ; Going home
 2300 ; Going to sleep
 ; Money
 500000 ; Starting money
 20 ; Road price
-100000 ; Powerplant price
-80000 ; Pump price
+50000 ; Powerplant price
+8000 ; Pump price
 5 ; House tax
 50 ; Business tax
 0.03 ; Income tax rate
@@ -19,7 +19,7 @@
 25 ; Maximum salary increase
 ; Speeds
 0.5 ; Offers
-0.5 ; Cars
+0.5 ; Vehicles
 0.75 ; Resources
 ; Colors
 [0 0 0 200] ; Labels

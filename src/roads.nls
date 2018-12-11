@@ -1,0 +1,20 @@
+to loadRoads
+  carefully [
+    file-open "roads.txt"
+    while [not file-at-end?] [
+      let :x file-read
+      let :y file-read
+      ask patch :x :y [set pcolor roadColor]
+    ]
+    file-close
+  ][]
+end
+
+to saveRoads
+  carefully [file-delete "roads.txt"][]
+  file-open "roads.txt"
+  ask patches with [pcolor = roadColor] [
+    file-print (word pxcor " " pycor)
+  ]
+  file-close
+end
