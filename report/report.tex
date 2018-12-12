@@ -45,6 +45,7 @@
 % Colors
 \usepackage{xcolor}
 
+\usepackage{hyperref}
 
 % --- Drafting ---
 \usepackage[chapter]{easy-todo}
@@ -68,37 +69,48 @@
 	{\large Décembre 2018\par}
 \end{titlepage}
 
-\listoftodos
-\newpage
-
 \tableofcontents
 \newpage
-\todo{place extra images from img folder}
 
 \chapter*{Introduction}
 \addcontentsline{toc}{chapter}{Introduction}
 
 
-Dans ce rapport sera présenté le jeu SimCity réalisé en NetLogo en une période de un mois et demi. La version finale reprend les éléments essentiels de la franchise, mais n'est cependant pas une copie.
-Beaucoup de choses qu'il aurait été intéressant d'ajouter n'ont pas pue être implémentées comme la pollution, les déchets, la météo et les évènements (catastrophes naturelles, évènements sociétaux) pour n'en nommer que quelques unes.\\
+Dans ce rapport sera présenté le jeu SimCity réalisé en NetLogo sur une période d'un mois et demi. La version finale reprend les éléments essentiels de la franchise, mais n'est cependant pas une copie.\\
+Il aurait été intéressant d'ajouter beaucoup d'autres choses comme par exemple :
+\begin{itemize}
+	\item Une win/lose condition
+	\item De la pollution
+	\item Des déchets
+	\item Des batteries
+	\item Des naissances et décès
+	\item Une météo
+	\item Des évèvements (catastrohpes naturelles, grèves, etc...)
+\end{itemize}
+Mais avec près de 1600 lignes de code, dont plus de la moitié ont été réécrites au moins une fois, il était nécessaire de s'arrêter là pour rester dans le cadre du projet SCI.\\
+Le projet peut être téléchargé à cette adresse :\\
+\url{https://github.com/Tititesouris/SimCity}\\
+\par
 Après avoir présenté le jeu, nous analyserons dans ce rapport comment les différents éléments du jeu s'impactent entre eux et comment à partir de règles individuelles émergent des comportements collectifs.
-\todo{stats: nb of lines of code, nb of lines of code removed via commits}
+
 
 
 \chapter{Présentation}
 
 \section{Description}
-Après avoir hérité de la fortune de vos parents qui ont tragiquement disparus dans un accident de machine à laver, vous décidez de quitter le confort de votre train train quotidien et d'acheter une parcelle de terre afin de réaliser votre rêve d'enfance : construire la plus belle ville du monde.\\
+Après avoir hérité de la fortune de vos parents qui ont tragiquement disparus ce Noël dernier dans un accident de machine à laver, vous décidez de quitter le confort de votre train train quotidien et d'acheter une parcelle de terre afin de réaliser votre rêve d'enfance : construire la plus belle ville du monde.\\
+Pour cela vous devrez laisser courir votre imagination, planifier vos constructions, faire des choix difficiles parfois... Mais toujours, vous le ferez avec espoir et détermination, parce que c'est VOTRE PROJEEEET !!\\
 À vous maintenant d'ériger votre ville et de la faire fleurir pour que vos habitants y vivent heureux.
-
-\todo{plus de presentation, donner envie, des images ptetre}
+\begin{center}
+	\includegraphics[width=\textwidth]{intro}
+\end{center}
 
 
 \newpage
 \subsection{Routes}
 Lorsque vous arrivez sur votre parcelle, il n'y a qu'une autoroute et un terrain vide.
 L'autoroute est le seul lien entre votre ville et les villes aux alentours. C'est par cet autoroute qu'arriveront vos nouveaux habitants et que partiront vos habitants malheureux.
-Pour construire un bâtiment, celui-ci doit être adjacent à une route. La première chose à faire est donc de contruire une route reliée à l'autoroute afin de pouvoir commencer à construire autour.
+Pour construire un bâtiment, celui-ci doit être adjacent à une route. La première chose à faire est donc de construire une route reliée à l'autoroute afin de pouvoir commencer à construire autour.
 Chaque morceau de route de votre ville vous coûte tous les jours un même coût de maintenance.\\
 Les routes sont au cœur de votre ville. C'est par elles que circulent tous les agents mobiles, soit :
 \begin{itemize}
@@ -154,7 +166,7 @@ Dans le comportement de clonage, les agents font partie d'un groupe. Ce groupe c
 \subsubsection{Camions de déménagement}
 Les camions de déménagement ont deux fonctions. Amener de nouveaux habitants dans votre ville et emmener des habitants qui quittent votre ville en dehors de celle-ci.\\
 Dans le premier cas, les camions de déménagement apparaissent sur l'autoroute avec des passagers qui souhaitent s'installer dans votre ville. Ils roulent alors jusqu'à trouver un emplacement libre dans une zone résidentielle pour construire une maison et emménager.
-Le nombre de nouveaux camions de déménagement qui arrivent chaque jour par l'autoroute dépend de l'attrctivité de votre ville. L'attractivité est directement proportionelle au bonheur total de votre ville. Avec un bonheur de 0\% il y aura 2 nouveaux camions par jour. Avec un bonheur de 100\% il y aura 2 nouveaux camions toutes les 6 heures.\\
+Le nombre de nouveaux camions de déménagement qui arrivent chaque jour par l'autoroute dépend de l’attractivité de votre ville. L'attractivité est directement proportionnelle au bonheur total de votre ville. Avec un bonheur de 0\% il y aura 2 nouveaux camions par jour. Avec un bonheur de 100\% il y aura 2 nouveaux camions toutes les 6 heures.\\
 Dans le deuxième cas, lorsque les résidents d'une maison décident de quitter votre ville, la maison est détruite et un camion de déménagement apparait, contenant les anciens résidents. Ce camion conduira jusqu'à l'autoroute où il disparaîtra. Si un camion de déménagement est encore présent un très long temps après avoir été créé, il disparait avec ses passagers.
 
 \subsubsection{Voitures}
@@ -164,8 +176,8 @@ Les voitures transportent vos habitants sur les routes de votre ville. Les voitu
 Les offres d'emploi sont créées tôt le matin par les entreprises qui ont des postes non pourvus. Les offres contiennent un nombre d'emplois disponibles. Elles suivent les routes avec un comportement de clonage aux intersections jusqu'à ce que des maisons avec des résidents au chômage acceptent la totalité des emplois disponibles. Si les offres sont encore présentes au moment où les habitants quittent leur maison le matin, elles disparaissent.
 
 \subsubsection{Ressources}
-Les ressources, comme les offres d'emploi, arpentent les routes avec un comportement de clonage aux intersections. L'électricité et l'eau sont les deux resources qui existent dans votre ville.\\
-Les resources contiennent une quantité de resource (une charge dans le cas de l'électricité, un volume dans le cas de l'eau) qui leur est donnée à leur création et qui diminue à chaque fois qu'un bâtiment en consomme une part. Si les resources sont encore présentes quelques heures après avoir été créées, elles disparaissent. Les resources sont utilisées par différents bâtiments. Ces bâtiments stockent une partie des resources pour pouvoir les consommer en attendant d'en reçevoir plus.
+Les ressources, comme les offres d'emploi, arpentent les routes avec un comportement de clonage aux intersections. L'électricité et l'eau sont les deux ressources qui existent dans votre ville.\\
+Les ressources contiennent une quantité de ressource (une charge dans le cas de l'électricité, un volume dans le cas de l'eau) qui leur est donnée à leur création et qui diminue à chaque fois qu'un bâtiment en consomme une part. Si les ressources sont encore présentes quelques heures après avoir été créées, elles disparaissent. Les ressources sont utilisées par différents bâtiments. Ces bâtiments stockent une partie des ressources pour pouvoir les consommer en attendant d'en recevoir plus.
 
 
 
@@ -255,7 +267,7 @@ Si le bonheur descend en dessous de 50\%, il y a une probabilité que l'entrepri
 Les personnes qui ont une résidence sont les habitants de votre ville. Les personnes sans résidence sont soit en train d'emménager soit en train de quitter votre ville.
 Vos habitants sont au chômage jusqu'à ce qu'ils trouvent un employeur par le biais d'une offre d'emploi ou bien qu'ils créent leur propre entreprise.
 Tous les habitants quittent leur maison dans la matinée et montent dans leurs voitures. S'ils ont un employeur, ils conduisent dans leur voiture jusqu'à trouver leur entreprise. S'ils sont au chômage, ils conduisent jusqu'à trouver un emplacement vide dans une zone d'activités économiques pour y fonder une entreprise.\\
-Les habitants qui ont un emploi commencent avec un salaire de base qui est le même pour tous. Puis, leur salaire augmente chaque semaine de manière linéraire jusqu'à atteindre le salaire maximum (le même pour tout le monde) au bout d'un an.\\
+Les habitants qui ont un emploi commencent avec un salaire de base qui est le même pour tous. Puis, leur salaire augmente chaque semaine de manière linéaire jusqu'à atteindre le salaire maximum (le même pour tout le monde) au bout d'un an.\\
 Le bonheur d'une personne est calculé tous les ticks en fonction de sa situation d'embauche et de son salaire de la manière suivante :\\
 Si la personne est au chômage, son bonheur est équivalent à 75\%, moins 1\% pour chaque 3 heures au chômage.
 Si la personne est employée, son bonheur est équivalent à 50\%, plus la moitié du pourcentage du salaire de la personne par rapport au salaire maximal, moins le pourcentage d'impôts sur le revenu.
@@ -431,7 +443,7 @@ Avec ces boutons et les raccourcis clavier associés vous pouvez :
 \end{itemize}
 
 \subsubsection{4 : Visibilité des agents}
-Avec ces switches vous pouvez afficher ou cacher les labels flotants des agents, les personnes, les offres d'emploi, l'électricité et l'eau.
+Avec ces switches vous pouvez afficher ou cacher les labels flottants des agents, les personnes, les offres d'emploi, l'électricité et l'eau.
 
 \subsubsection{5 : Impôts}
 Avec ces sliders vous pouvez contrôler le taux d'imposition sur le revenu, l'impôt sur les maisons et l'impôt sur les entreprises.
@@ -446,25 +458,63 @@ Avec ces boutons vous pouvez :
 Pour sauvegarder et charger votre ville et non pas seulement les structures, il faut passer par le menu \textbf{File -> Export/Import -> Export/Import world}.
 
 \subsubsection{7 : Curseurs}
-Si le bouton ``Use cursor'' est activé alors vous pouvez avec votre souris sélectionner un des curseurs suivants :
+Si le bouton ``Use cursor'' est activé alors vous pouvez avec votre souris sélectionner un des curseurs suivants :\\
 \begin{itemize}
-	\item \textbf{Route}\\
-	Construisez une route en cliquant sur une route ou autoroute déjà existante et en glissant jusqu'à la position désirée
-	\item \textbf{Zone résidentielle}\\
-	Désignez une zone résidentielle en faisant un glisser déposer délimitant la zone souhaitée autour d'une route
-	\item \textbf{Zone d'activités économiques}\\
-	Désignez une zone d'activités économiques en faisant un glisser déposer délimitant la zone souhaitée autour d'une route
+	\item
+	\begin{minipage}{0.75\textwidth}
+		\textbf{Route}\\
+		Construisez une route en cliquant sur une route ou autoroute déjà existante et en glissant jusqu'à la position désirée
+	\end{minipage}
+	\begin{minipage}{0.2\textwidth}
+		\begin{flushright}
+			\includegraphics[height=30px]{planners_road}
+		\end{flushright}
+	\end{minipage}
+	
+	\item
+	\begin{minipage}{0.75\textwidth}
+		\textbf{Zone résidentielle}\\
+		Désignez une zone résidentielle en faisant un glisser déposer délimitant la zone souhaitée autour d'une route
+	\end{minipage}
+	\begin{minipage}{0.2\textwidth}
+		\begin{flushright}
+			\includegraphics[height=55px]{planners_house_zone}
+		\end{flushright}
+	\end{minipage}
+	
+	\item
+	\begin{minipage}{0.75\textwidth}
+		\textbf{Zone d'activités économiques}\\
+		Désignez une zone d'activités économiques en faisant un glisser déposer délimitant la zone souhaitée autour d'une route
+	\end{minipage}
+	\begin{minipage}{0.2\textwidth}
+		\begin{flushright}
+			\includegraphics[height=55px]{planners_business_zone}
+		\end{flushright}
+	\end{minipage}
+	
 	\item \textbf{Centrale électrique}\\
 	Construisez une ou des centrales électriques en cliquant ou en faisant un glisser déposer autour d'une route
+	
 	\item \textbf{Pompe à eau}\\
 	Construisez une ou des pompes à eau en cliquant ou en faisant un glisser déposer autour d'une route
-	\item \textbf{Intersections}\\
-	Créez une intersection en cliquant sur un morceau de route ou sélectionnez une intersection en cliquant sur celle-ci, puis modifiez cette intersection en sélectionnant les directions autorisées
+	
+	\item
+	\begin{minipage}{0.75\textwidth}
+		\textbf{Intersections}\\
+	Créez une intersection en cliquant sur un patch de route ou sélectionnez une intersection en cliquant sur celle-ci. Modifiez l'intersection sélectionnée en
+	\end{minipage}
+	\begin{minipage}{0.2\textwidth}
+		\begin{flushright}
+			\includegraphics[height=55px]{intersection_edit}
+		\end{flushright}
+	\end{minipage}
+	cliquant sur les directions à autoriser ou non. Validez en cliquant de nouveau sur l'intersection.
 \end{itemize}
 
 \subsubsection{8 : Votre ville}
 Votre ville est entièrement vide au début du jeu sauf pour une autoroute qui longe le côté gauche de votre parcelle.
-Vous pouvez intéragir dans ce cadrant et observer votre ville évoluer.
+Vous pouvez interagir dans ce cadrant et observer votre ville évoluer.
 
 
 
@@ -543,7 +593,7 @@ Chaque ligne du fichier correspond à une autoroute, chaque propriété de l'aut
 
 
 \chapter{Simulations}
-À chaque ajout d'une nouvelle fonctionnalité ou presque, j'ai refactoré une grande partie du code. Cela permet d'avoir un code et un résultat très cohérent dans son ensemble, mais rend impossible la comparaison d'une version à l'autre. Par exemple j'aurais aimé comparer le déplacement des agents sur les routes dans la première version et la version finale, mais le concept même de route n'est plus du tout le même dans sa structure et dans son éxecution.\\
+À chaque ajout d'une nouvelle fonctionnalité ou presque, j'ai refactoré une grande partie du code. Cela permet d'avoir un code et un résultat très cohérent dans son ensemble, mais rend impossible la comparaison d'une version à l'autre. Par exemple j'aurais aimé comparer le déplacement des agents sur les routes dans la première version et la version finale, mais le concept même de route n'est plus du tout le même dans sa structure et dans son exécution.\\
 Il y a donc simplement une seule version pour laquelle je fais varier les situations initiales et/ou les paramètres pour évaluer les comportements. Toutes les simulations réalisées sont effectuées par rapport au temps et, sauf indication contraire, depuis le premier tick de la simulation jusqu'à un temps arbitraire suffisant permettant d'observer un phénomène.
 
 
@@ -557,7 +607,7 @@ On remarque bien qu'il y a une partie fixe de consommation même quand personne 
 
 \subsection{Stockage}
 En plus des maisons et entreprises, les pompes à eau consomment de l'électricité. Sans cette électricité, elles ne fourniraient pas d'eau.
-Les bâtiments stockent plus de ressources qu'ils n'uitilisent pour éviter qu'ils soient constamment en besoin d'une ressource. Leur capacité de stockage des ressources est toujours le double de leur consommation de la ressource.\\
+Les bâtiments stockent plus de ressources qu'ils n’utilisent pour éviter qu'ils soient constamment en besoin d'une ressource. Leur capacité de stockage des ressources est toujours le double de leur consommation de la ressource.\\
 L'électricité peut donc être soit sur les routes en déplacement, soit stockée dans les bâtiments. On souhaite observer l'évolution de l'électricité au cours du temps. On va donc placer une seule centrale électrique et aucun consommateur d'électricité. Puis on ajoute une pompe à eau (premier point rouge), puis on ajoute une deuxième pompe à eau, une zone résidentielle et une zone d'activités économiques (deuxième point rouge).
 \begin{center}
 	\includegraphics[width=\textwidth]{electricity_storage}
@@ -571,17 +621,17 @@ Le graphe suivant montre la suite de la simulation.
 \begin{center}
 	\includegraphics[width=\textwidth]{electricity_storage_2}
 \end{center}
-On remarque que des avertissements de manque d'électricité commencent à apparaître. Cela est dû au fait que bien qu'il y ait encore de l'électricité en stock dans certains bâtiments, les bâtiments les plus éloignés de la centrale électrique ne reçoivent jamais asser d'électricité.\\
+On remarque que des avertissements de manque d'électricité commencent à apparaître. Cela est dû au fait que bien qu'il y ait encore de l'électricité en stock dans certains bâtiments, les bâtiments les plus éloignés de la centrale électrique ne reçoivent jamais assez d'électricité.\\
 La consommation augmente mais on remarque tout de même des petites descentes. Cela est dû aux maisons ou entreprises qui quittent la ville dû au manque d'électricité qui engendre du malheur.\\
-Bien que la consommation augmente, l'électricité stockée elle diminue. Cela est dû au fait qu'il n'y a simplement pas asser d'électricité produite pour qu'elle soit stockée, et comme la consommation augmente, il y a moins d'électricité disponible pour être stockée.\\
-Au bout d'un certain temps, la consommation déscend brusquement, de même que les avertissements. Cela est signe que les maisons et entreprises ne supprtaient plus le manque d'électricité et ont quittées la ville en masse..\\
-Enfin on remarque une remontée de la consommation, suivi d'une remontée des avertissements, dûe aux nouvelles maisons et entreprises qui s'installent. Un cycle stable commence.
+Bien que la consommation augmente, l'électricité stockée elle diminue. Cela est dû au fait qu'il n'y a simplement pas assez d'électricité produite pour qu'elle soit stockée, et comme la consommation augmente, il y a moins d'électricité disponible pour être stockée.\\
+Au bout d'un certain temps, la consommation descend brusquement, de même que les avertissements. Cela est signe que les maisons et entreprises ne supportaient plus le manque d'électricité et ont quittées la ville en masse..\\
+Enfin on remarque une remontée de la consommation, suivi d'une remontée des avertissements, dû aux nouvelles maisons et entreprises qui s'installent. Un cycle stable commence.
 
 
 \section{Bonheur}
 \subsection{Attractivité}
 L'attractivité de la ville influence la fréquence de nouveaux camions de déménagement. L'attractivité est basée sur le bonheur de la ville.
-Pour vérifier que le nombre de camions varie proportionellement en fonction du bonheur on observe le nombre de nouveaux camions avec un bonheur élevé, puis on augmente les taxes et supprime centrales électrique et les pompes à eau (point rouge sur le graphe) pour voir le changement de fréquence.
+Pour vérifier que le nombre de camions varie proportionnellement en fonction du bonheur on observe le nombre de nouveaux camions avec un bonheur élevé, puis on augmente les taxes et supprime centrales électrique et les pompes à eau (point rouge sur le graphe) pour voir le changement de fréquence.
 \begin{center}
 	\includegraphics[width=\textwidth]{happiness_new_trucks}
 \end{center}
@@ -593,11 +643,11 @@ Il est intéressant de noter que le bonheur augmente après un certain temps san
 \section{Revenu}
 Le revenu est basé sur les impôts. Plus les impôts sont élevés, plus le revenu est grand. Mais si les impôts deviennent trop élevés et ne permettent pas aux habitants de survivre, ils quittent la ville.
 On veut observer comment les différents impôts affectent le revenu. On compare donc le nombre d'employés, de maisons et d'entreprises avec le revenu obtenu.\\
-On choisit 50\% comme taux d'imposition sur le salaire des employés, 50\$ comme impôt sur les maison et 100\% comme impôt sur les entreprises. Ces valeurs sont suffisamment grandes pour observer les changements sur le graphes tout en gardant la population suffisemment heureuse pour qu'elle ne parte pas.
+On choisit 50\% comme taux d'imposition sur le salaire des employés, 50\$ comme impôt sur les maison et 100\% comme impôt sur les entreprises. Ces valeurs sont suffisamment grandes pour observer les changements sur le graphes tout en gardant la population suffisamment heureuse pour qu'elle ne parte pas.
 \begin{center}
 	\includegraphics[width=\textwidth]{revenu}
 \end{center}
-On remarque en effet que chaque fois qu'il y a un nouvel employé, une nouvelle maison ou une nouvelle entreprise, le revenu augmente. On remarque également que le nombre d'entreprises augmente uniquement quand le nombre d'employés augmente. C'est parceque ces employés sont les créateurs de ces nouvelles entreprises. C'est également pour cela que la courbe forme un escalier régulier, car les habitants sortent de chez eux en même temps pour aller créer une entreprise.\\
+On remarque en effet que chaque fois qu'il y a un nouvel employé, une nouvelle maison ou une nouvelle entreprise, le revenu augmente. On remarque également que le nombre d'entreprises augmente uniquement quand le nombre d'employés augmente. C'est parce que ces employés sont les créateurs de ces nouvelles entreprises. C'est également pour cela que la courbe forme un escalier régulier, car les habitants sortent de chez eux en même temps pour aller créer une entreprise.\\
 Lorsque le nombre d'employés augmente mais pas le nombre d'entreprises, il s'agit de personnes recrutées via les offres d'emploi.
 
 
@@ -611,7 +661,7 @@ D'abord un impôt sur les maisons de 500\$ et 0 pour les autres. Avec un tel imp
 	\includegraphics[width=\textwidth]{houses_taxes}
 \end{center}
 On remarque qu'il faut un certain temps pour que l'effet de l'impôt se fasse ressentir car si tout va bien pour une maison seul l'avertissement dû aux impôts rentre en compte dans le calcul du bonheur. Cet avertissement prend du temps à prendre de l'importance.\\
-Le nombre de maisons et le bonheur des maisons atteint un équilibrium après un certain temps. C'est parceque les premières maison qui s'étaient installées quittent enfin la ville sous la pression des impôts, et de nouvelles maisons viennent immédiatement les remplacer. Cela continue de manière cyclique ad vitam æternam.\\
+Le nombre de maisons et le bonheur des maisons atteint un équilibre après un certain temps. C'est parce que les premières maison qui s'étaient installées quittent enfin la ville sous la pression des impôts, et de nouvelles maisons viennent immédiatement les remplacer. Cela continue de manière cyclique ad vitam æternam.\\
 On remarque que le nombre d'habitants est affecté de la même manière que le nombre de maisons, ce qui est logique car les habitants sont dans les maisons.
 
 \newpage
@@ -620,23 +670,23 @@ Maintenant un impôt sur les entreprises de 1000\$ et 0 pour les autres. Avec un
 \begin{center}
 	\includegraphics[width=\textwidth]{businesses_taxes}
 \end{center}
-On remarque que le bonheur des entreprises descend par paliers, en montant avant certains paliers. La montée est dûe aux nouvelles entreprises qui s'installent et qui font remonter la moyenne avec un bonheur de 100\%. Les paliers sont dûs au fait que les avertissements augmentent en importance au même moment. Les paliers disparaissent peu à peu car des entreprises disparaissent aléatoirement et d'autres les remplacent.\\
-Après un certain temps, il y a autant d'entreprises qui installent que d'entreprises qui quittent la ville, ce qui provoque un équilibrium du nombre d'entreprises observée.
-On remarque que le nombre de maisons et par conséquent le nombre d'habitants est affecté par cet équilibrium. Cela est dû au fait qu'il n'y a pas asser d'entreprises pour satisfaire suffisamment les habitants qui quittent donc la ville.
+On remarque que le bonheur des entreprises descend par paliers, en montant avant certains paliers. La montée est dû aux nouvelles entreprises qui s'installent et qui font remonter la moyenne avec un bonheur de 100\%. Les paliers sont dû au fait que les avertissements augmentent en importance au même moment. Les paliers disparaissent peu à peu car des entreprises disparaissent aléatoirement et d'autres les remplacent.\\
+Après un certain temps, il y a autant d'entreprises qui installent que d'entreprises qui quittent la ville, ce qui provoque un équilibre du nombre d'entreprises observée.
+On remarque que le nombre de maisons et par conséquent le nombre d'habitants est affecté par cet équilibre. Cela est dû au fait qu'il n'y a pas assez d'entreprises pour satisfaire suffisamment les habitants qui quittent donc la ville.
 
 \newpage
 \subsection{Habitants}
-Efin un impôt de 0\$ pour les maisons et les entreprises, et un impôt sur le salaire des habitants de 0\% d'abord, 50\% au premier point rouge et 75\% au 2ème point rouge.
+Enfin un impôt de 0\$ pour les maisons et les entreprises, et un impôt sur le salaire des habitants de 0\% d'abord, 50\% au premier point rouge et 75\% au 2ème point rouge.
 \begin{center}
 	\includegraphics[width=\textwidth]{inhabitants_taxes}
 \end{center}
 On remarque que le bonheur est affecté par le changement du taux d'imposition de 0\% à 50\% mais la croissance de la population n'est pas affectée. Cela est dû au fait que le salaire de base couvre les besoins des habitants même taxés à 50\%, ils n'ont donc pas de raison de vouloir quitter la ville.\\
 Après 75\% cependant, tous les habitants se retrouvent dans l'incapacité de survire et quittent la ville, faisant chuter la population. Lorsque tous les habitants d'une maison l'ont quitté, la maison est détruite, c'est pourquoi on observe une diminution du nombre de maison en parallèle. Comme il n'y a plus de personnes pour travailler, les entreprises mettent la clé sous la porte, ce qui explique la diminution de leur nombre.\\
-Les sauts de bonheur qu'on peut aperçevoir sont dû aux nouveaux habitants rejoignant la ville, qui n'ont pas encore de travail et sont donc heureux car au chômage seulement depuis peu.
+Les sauts de bonheur qu'on peut apercevoir sont dû aux nouveaux habitants rejoignant la ville, qui n'ont pas encore de travail et sont donc heureux car au chômage seulement depuis peu.
 
 
 
 \chapter*{Conclusion}
 \addcontentsline{toc}{chapter}{Conclusion}
-C'est non-exhaustif car il y a énormément de paramètres.
+Compte tenu de l'énorme quantité de valeurs paramétrables et de l'infinité de situations provoquées par le joueur, les analyses ne sont pas exhaustives. Il est donc encouragé d'aller jouer soi-même avec la simulation et d'essayer de modifier les paramètres dans le fichier de configuration pour observer les changements induits.
 \end{document}
